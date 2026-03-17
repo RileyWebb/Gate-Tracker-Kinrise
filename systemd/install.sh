@@ -9,7 +9,13 @@ fi
 
 # Get the absolute path of the directory this script is in
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+REPO_DIR=$(dirname "$SCRIPT_DIR")
 SERVICE_NAME="gate-tracker-pull"
+
+echo "Installing required Python packages for the Server and GPIO Watcher..."
+# Using apt-get is the safest method on systems like Raspberry Pi OS to avoid PEP 668 'externally managed environment' errors
+apt-get update
+apt-get install -y python3-pip python3-flask python3-requests python3-gpiozero
 
 echo "Making the pull script executable..."
 chmod +x "$SCRIPT_DIR/pull-repo.sh"
@@ -29,6 +35,20 @@ sed -i "s|ExecStart=.*|ExecStart=$SCRIPT_DIR/pull-repo.sh|g" /etc/systemd/system
 # Reload systemd to recognize the new files
 echo "Reloading systemd daemon..."
 systemctl daemon-reload
+
+echo "Configuring and enabling the Flask API Server..."
+cp "$SCRIPT_DIR/gate-tracker-server.service" /etc/systemd/system/
+sed -i "s|WorkingDirectory=.*|WorkingDirectory=$REPO_DIR/src|g" /etc/systemd/system/gate-tracker-server.service
+sed -i "s|ExecStart=.*|ExecStart=/usr/bin/python3 $REPO_DIR/src/server.py|g" /etc/systemd/system/gate-tracker-server.service
+systemctl enable gate-tracker-server.service
+systemctl start gate-tracker-server.service
+
+echo "Configuring and enabling the GPIO Watcher..."
+cp "$SCRIPT_DIR/gate-tracker-watcher.service" /etc/systemd/system/
+sed -i "s|WorkingDirectory=.*|WorkingDirectory=$REPO_DIR/src|g" /etc/systemd/system/gate-tracker-watcher.service
+sed -i "s|ExecStart=.*|ExecStart=/usr/bin/python3 $REPO_DIR/src/gpio_watcher.py|g" /etc/systemd/system/gate-tracker-watcher.service
+systemctl enable gate-tracker-watcher.service
+systemctl start gate-tracker-watcher.service
 
 # Enable and start the timer (not the service directly, the timer triggers the service)
 echo "Enabling and starting the $SERVICE_NAME timer..."

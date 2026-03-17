@@ -1,0 +1,34 @@
+{
+    "server_url": "http://localhost:5000/api/event",
+    "secret_token": "your_api_secret_here",
+    "buttons": {
+        "entrance_company_a": {
+            "gpio_pin": 17,
+            "action": "enter",
+            "gate": "entrance",
+            "company": "A",
+            "bounce_time": 0.2
+        },
+        "entrance_company_b": {
+            "gpio_pin": 27,
+            "action": "enter",
+            "gate": "entrance",
+            "company": "B",
+            "bounce_time": 0.2
+        },
+        "exit_company_a": {
+            "gpio_pin": 22,
+            "action": "exit",
+            "gate": "exit",
+            "company": "A",
+            "bounce_time": 0.2
+        },
+        "exit_company_b": {
+            "gpio_pin": 23,
+            "action": "exit",
+            "gate": "exit",
+            "company": "B",
+            "bounce_time": 0.2
+        }
+    }
+}

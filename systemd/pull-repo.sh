@@ -4,7 +4,7 @@
 # WARNING: Update REPO_DIR to the absolute path where your repo lives on the Linux machine
 REPO_DIR="/opt/Gate-Tracker-Kinrise"
 # WARNING: Update SSH_KEY_PATH to the absolute path of your secret SSH key file
-SSH_KEY_PATH="/kinrise/.ssh/id_rsa_gate_tracker"
+SSH_KEY_PATH="/home/kinrise/.ssh/id_rsa_gate_tracker"
 # Define the branch you want to pull
 BRANCH="main"
 
