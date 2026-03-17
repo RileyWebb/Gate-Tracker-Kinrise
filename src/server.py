@@ -5,6 +5,7 @@ from functools import wraps
 import subprocess
 import json
 import requests
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 DB_FILE = 'tracker.db'
@@ -26,7 +27,7 @@ def init_db():
         c.execute('''
             CREATE TABLE IF NOT EXISTS events (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                timestamp DATETIME DEFAULT (datetime('now', 'localtime')),
                 gate TEXT,
                 company TEXT,
                 action TEXT
@@ -110,8 +111,13 @@ def handle_event():
     with sqlite3.connect(DB_FILE) as conn:
         c = conn.cursor()
         
-        # Log event
-        c.execute('INSERT INTO events (gate, company, action) VALUES (?, ?, ?)', (gate, company, action))
+        # Log event with local timestamp
+        local_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        c.execute('INSERT INTO events (timestamp, gate, company, action) VALUES (?, ?, ?, ?)', (local_now, gate, company, action))
+        
+        # Delete entries older than 30 days
+        thirty_days_ago = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
+        c.execute('DELETE FROM events WHERE timestamp < ?', (thirty_days_ago,))
         
         # Update count
         delta = 1 if action == "enter" else -1
