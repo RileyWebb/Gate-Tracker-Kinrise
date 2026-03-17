@@ -73,6 +73,20 @@ def index():
         
     return render_template('index.html', counts=counts, events=events)
 
+@app.route('/api/status', methods=['GET'])
+def get_status():
+    with sqlite3.connect(DB_FILE) as conn:
+        conn.row_factory = sqlite3.Row
+        c = conn.cursor()
+        
+        c.execute('SELECT company, count FROM counts')
+        counts = {row['company']: row['count'] for row in c.fetchall()}
+        
+        c.execute('SELECT timestamp, gate, company, action FROM events ORDER BY timestamp DESC LIMIT 20')
+        events = [dict(row) for row in c.fetchall()]
+        
+    return jsonify({"counts": counts, "events": events})
+
 @app.route('/api/event', methods=['POST'])
 def handle_event():
     auth_header = request.headers.get('Authorization')

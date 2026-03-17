@@ -23,12 +23,12 @@
     <div class="dashboard">
         <div class="card">
             <h2>Company A</h2>
-            <div class="count">{{ counts.get('A', 0) }}</div>
+            <div class="count" id="count-A">{{ counts.get('A', 0) }}</div>
             <p>Trucks Currently On Site</p>
         </div>
         <div class="card">
             <h2>Company B</h2>
-            <div class="count">{{ counts.get('B', 0) }}</div>
+            <div class="count" id="count-B">{{ counts.get('B', 0) }}</div>
             <p>Trucks Currently On Site</p>
         </div>
     </div>
@@ -43,7 +43,7 @@
                 <th>Action</th>
             </tr>
         </thead>
-        <tbody>
+        <tbody id="events-body">
             {% for event in events %}
             <tr>
                 <td>{{ event.timestamp }}</td>
@@ -52,11 +52,63 @@
                 <td class="{{ event.action }}" style="text-transform: capitalize;">{{ event.action }}</td>
             </tr>
             {% else %}
-            <tr>
+            <tr id="no-events">
                 <td colspan="4" style="text-align: center;">No events recorded yet.</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+
+    <script>
+        async function fetchStatus() {
+            try {
+                const response = await fetch('/api/status');
+                if (!response.ok) return;
+                const data = await response.json();
+                
+                // Update company counts
+                document.getElementById('count-A').innerText = data.counts['A'] !== undefined ? data.counts['A'] : 0;
+                document.getElementById('count-B').innerText = data.counts['B'] !== undefined ? data.counts['B'] : 0;
+                
+                // Update events table
+                const tbody = document.getElementById('events-body');
+                tbody.innerHTML = ''; // Clear current rows
+                
+                if (data.events.length === 0) {
+                    tbody.innerHTML = '<tr id="no-events"><td colspan="4" style="text-align: center;">No events recorded yet.</td></tr>';
+                } else {
+                    data.events.forEach(event => {
+                        const tr = document.createElement('tr');
+                        
+                        const tdTime = document.createElement('td');
+                        tdTime.innerText = event.timestamp;
+                        tr.appendChild(tdTime);
+                        
+                        const tdGate = document.createElement('td');
+                        tdGate.style.textTransform = 'capitalize';
+                        tdGate.innerText = event.gate;
+                        tr.appendChild(tdGate);
+                        
+                        const tdCompany = document.createElement('td');
+                        tdCompany.innerText = event.company;
+                        tr.appendChild(tdCompany);
+                        
+                        const tdAction = document.createElement('td');
+                        tdAction.className = event.action;
+                        tdAction.style.textTransform = 'capitalize';
+                        tdAction.innerText = event.action;
+                        tr.appendChild(tdAction);
+                        
+                        tbody.appendChild(tr);
+                    });
+                }
+            } catch (error) {
+                console.error("Failed to fetch status updates:", error);
+            }
+        }
+
+        // Poll the server for updates every 2 seconds
+        setInterval(fetchStatus, 2000);
+    </script>
 </body>
 </html>
