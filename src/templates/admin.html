@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gate Tracker Admin</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 2rem; background-color: #f4f4f9; color: #333; }
+        .card { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: auto; }
+        h1, h2 { color: #2c3e50; }
+        .form-group { margin-bottom: 1rem; }
+        label { display: block; font-weight: bold; margin-bottom: .5rem; text-transform: capitalize; }
+        input { padding: .5rem; width: 100%; box-sizing: border-box; }
+        .btn { padding: .5rem 1rem; background-color: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; margin-top: 1rem; }
+        .message { padding: 1rem; background-color: #dff0d8; color: #3c763d; border: 1px solid #d6e9c6; border-radius: 4px; margin-bottom: 1rem; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Admin Control Panel</h1>
+        
+        {% if message %}
+        <div class="message">{{ message }}</div>
+        {% endif %}
+
+        <form method="POST" action="/admin">
+            <h2>Configure GPIO Pins</h2>
+            {% for key, button in config['buttons'].items() %}
+            <div class="form-group">
+                <label for="pin_{{ key }}">{{ button['gate'] }} Gate | Company {{ button['company'] }} | Action: {{ button['action'] }}</label>
+                <input type="number" id="pin_{{ key }}" name="pin_{{ key }}" value="{{ button['gpio_pin'] }}" required>
+            </div>
+            {% endfor %}
+
+            <hr>
+
+            <h2>Admin Login Settings</h2>
+            <div class="form-group">
+                <label for="admin_username">Admin Username</label>
+                <input type="text" id="admin_username" name="admin_username" value="{{ config['admin_username'] }}" required>
+            </div>
+            <div class="form-group">
+                <label for="admin_password">Admin Password</label>
+                <input type="password" id="admin_password" name="admin_password" value="{{ config['admin_password'] }}" required>
+            </div>
+
+            <button type="submit" class="btn">Update & Restart Watcher</button>
+            <p style="margin-top: 1rem;"><a href="/">← Back to Dashboard</a></p>
+        </form>
+    </div>
+</body>
+</html>

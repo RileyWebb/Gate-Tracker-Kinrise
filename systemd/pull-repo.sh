@@ -17,4 +17,8 @@ cd "$REPO_DIR" || { echo "Failed to navigate to $REPO_DIR"; exit 1; }
 export GIT_SSH_COMMAND="ssh -i $SSH_KEY_PATH -o IdentitiesOnly=yes -o StrictHostKeyChecking=no"
 git pull origin "$BRANCH"
 
+echo "Restarting services to apply potential updates..."
+systemctl restart gate-tracker-server.service
+systemctl restart gate-tracker-watcher.service
+
 echo "Pull completed successfully at $(date)"

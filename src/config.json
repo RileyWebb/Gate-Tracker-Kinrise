@@ -1,16 +1,18 @@
 {
-    "server_url": "http://localhost:5000/api/event",
+    "server_url": "http://localhost/api/event",
     "secret_token": "your_api_secret_here",
+    "admin_username": "admin",
+    "admin_password": "password123",
     "buttons": {
         "entrance_company_a": {
-            "gpio_pin": 17,
+            "gpio_pin": 21,
             "action": "enter",
             "gate": "entrance",
             "company": "A",
             "bounce_time": 0.2
         },
         "entrance_company_b": {
-            "gpio_pin": 27,
+            "gpio_pin": 24,
             "action": "enter",
             "gate": "entrance",
             "company": "B",

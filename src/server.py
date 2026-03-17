@@ -1,9 +1,13 @@
 import sqlite3
 import os
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, Response, redirect, url_for
+from functools import wraps
+import subprocess
+import json
 
 app = Flask(__name__)
 DB_FILE = 'tracker.db'
+CONFIG_FILE = 'config.json'
 SECRET_TOKEN = 'your_api_secret_here'
 
 def init_db():
@@ -30,6 +34,30 @@ def init_db():
         conn.commit()
 
 init_db()
+
+def get_config():
+    with open(CONFIG_FILE, 'r') as f:
+        return json.load(f)
+
+def save_config(config_data):
+    with open(CONFIG_FILE, 'w') as f:
+        json.dump(config_data, f, indent=4)
+
+def check_auth(username, password):
+    config = get_config()
+    return username == config.get('admin_username') and password == config.get('admin_password')
+
+def requires_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth = request.authorization
+        if not auth or not check_auth(auth.username, auth.password):
+            return Response(
+                'Could not verify your access level for that URL.\n'
+                'You have to login with proper credentials', 401,
+                {'WWW-Authenticate': 'Basic realm="Login Required"'})
+        return f(*args, **kwargs)
+    return decorated
 
 @app.route('/')
 def index():
@@ -80,6 +108,36 @@ def handle_event():
 
     return jsonify({"success": True, "company": company, "new_count": new_count})
 
+@app.route('/admin', methods=['GET', 'POST'])
+@requires_auth
+def admin():
+    config = get_config()
+    if request.method == 'POST':
+        # Update GPIO pins
+        for key in config['buttons']:
+            new_pin = request.form.get(f'pin_{key}')
+            if new_pin and new_pin.isdigit():
+                config['buttons'][key]['gpio_pin'] = int(new_pin)
+        
+        # Update credentials
+        new_user = request.form.get('admin_username')
+        new_pass = request.form.get('admin_password')
+        if new_user: config['admin_username'] = new_user
+        if new_pass: config['admin_password'] = new_pass
+        
+        save_config(config)
+        
+        # Restart the watcher service to apply new GPIO settings
+        try:
+            subprocess.run(['systemctl', 'restart', 'gate-tracker-watcher.service'], check=True)
+            message = "Settings updated and GPIO watcher restarted successfully."
+        except Exception as e:
+            message = f"Settings updated, but failed to restart watcher service: {str(e)}"
+            
+        return render_template('admin.html', config=config, message=message)
+        
+    return render_template('admin.html', config=config)
+
 if __name__ == '__main__':
-    # Run the server on all available interfaces (0.0.0.0)
-    app.run(host='0.0.0.0', port=5000)
+    # Run the server on port 80 (requires root)
+    app.run(host='0.0.0.0', port=80)
