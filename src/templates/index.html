@@ -22,13 +22,13 @@
     
     <div class="dashboard">
         <div class="card">
-            <h2>Company A</h2>
-            <div class="count" id="count-A">{{ counts.get('A', 0) }}</div>
+            <h2><img src="/static/img/kinrise_logo.png" alt="Kinrise Logo" style="height: 40px; vertical-align: middle; margin-right: 10px;">Kinrise</h2>
+            <div class="count" id="count-Kinrise">{{ counts.get('Kinrise', 0) }}</div>
             <p>Trucks Currently On Site</p>
         </div>
         <div class="card">
-            <h2>Company B</h2>
-            <div class="count" id="count-B">{{ counts.get('B', 0) }}</div>
+            <h2><img src="/static/img/muve_logo.png" alt="Muve Logo" style="height: 40px; vertical-align: middle; margin-right: 10px;">Muve</h2>
+            <div class="count" id="count-Muve">{{ counts.get('Muve', 0) }}</div>
             <p>Trucks Currently On Site</p>
         </div>
     </div>
@@ -67,8 +67,8 @@
                 const data = await response.json();
                 
                 // Update company counts
-                document.getElementById('count-A').innerText = data.counts['A'] !== undefined ? data.counts['A'] : 0;
-                document.getElementById('count-B').innerText = data.counts['B'] !== undefined ? data.counts['B'] : 0;
+                document.getElementById('count-Kinrise').innerText = data.counts['Kinrise'] !== undefined ? data.counts['Kinrise'] : 0;
+                document.getElementById('count-Muve').innerText = data.counts['Muve'] !== undefined ? data.counts['Muve'] : 0;
                 
                 // Update events table
                 const tbody = document.getElementById('events-body');

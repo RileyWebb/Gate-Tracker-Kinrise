@@ -3,33 +3,38 @@
     "secret_token": "your_api_secret_here",
     "admin_username": "admin",
     "admin_password": "password123",
+    "forwarding": {
+        "enabled": false,
+        "url": "",
+        "token": ""
+    },
     "buttons": {
         "entrance_company_a": {
             "gpio_pin": 21,
             "action": "enter",
             "gate": "entrance",
-            "company": "A",
+            "company": "Kinrise",
             "bounce_time": 0.2
         },
         "entrance_company_b": {
             "gpio_pin": 24,
             "action": "enter",
             "gate": "entrance",
-            "company": "B",
+            "company": "Muve",
             "bounce_time": 0.2
         },
         "exit_company_a": {
             "gpio_pin": 22,
             "action": "exit",
             "gate": "exit",
-            "company": "A",
+            "company": "Kinrise",
             "bounce_time": 0.2
         },
         "exit_company_b": {
             "gpio_pin": 23,
             "action": "exit",
             "gate": "exit",
-            "company": "B",
+            "company": "Muve",
             "bounce_time": 0.2
         }
     }

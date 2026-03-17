@@ -4,6 +4,7 @@ from flask import Flask, request, jsonify, render_template, Response, redirect, 
 from functools import wraps
 import subprocess
 import json
+import requests
 
 app = Flask(__name__)
 DB_FILE = 'tracker.db'
@@ -29,8 +30,8 @@ def init_db():
             )
         ''')
         # Initialize companies if not exist
-        c.execute('INSERT OR IGNORE INTO counts (company, count) VALUES ("A", 0)')
-        c.execute('INSERT OR IGNORE INTO counts (company, count) VALUES ("B", 0)')
+        c.execute('INSERT OR IGNORE INTO counts (company, count) VALUES ("Kinrise", 0)')
+        c.execute('INSERT OR IGNORE INTO counts (company, count) VALUES ("Muve", 0)')
         conn.commit()
 
 init_db()
@@ -101,6 +102,8 @@ def handle_event():
     if not all([gate, company, action]):
         return jsonify({"error": "Missing data"}), 400
 
+    config = get_config()
+
     with sqlite3.connect(DB_FILE) as conn:
         c = conn.cursor()
         
@@ -120,12 +123,32 @@ def handle_event():
         c.execute('SELECT count FROM counts WHERE company = ?', (company,))
         new_count = c.fetchone()[0]
 
+    # Forward to external API if enabled
+    forwarding = config.get('forwarding', {})
+    if forwarding.get('enabled') and forwarding.get('url'):
+        try:
+            headers = {"Content-Type": "application/json"}
+            if forwarding.get('token'):
+                headers["Authorization"] = f"Bearer {forwarding.get('token')}"
+            
+            requests.post(
+                forwarding.get('url'),
+                json=data,
+                headers=headers,
+                timeout=5
+            )
+        except Exception as e:
+            print(f"Failed to forward event: {e}")
+
     return jsonify({"success": True, "company": company, "new_count": new_count})
 
 @app.route('/admin', methods=['GET', 'POST'])
 @requires_auth
 def admin():
     config = get_config()
+    if 'forwarding' not in config:
+        config['forwarding'] = {"enabled": False, "url": "", "token": ""}
+
     if request.method == 'POST':
         # Update GPIO pins
         for key in config['buttons']:
@@ -139,6 +162,11 @@ def admin():
         if new_user: config['admin_username'] = new_user
         if new_pass: config['admin_password'] = new_pass
         
+        # Update forwarding settings
+        config['forwarding']['enabled'] = request.form.get('forwarding_enabled') == 'on'
+        config['forwarding']['url'] = request.form.get('forwarding_url', '').strip()
+        config['forwarding']['token'] = request.form.get('forwarding_token', '').strip()
+
         save_config(config)
         
         # Restart the watcher service to apply new GPIO settings
