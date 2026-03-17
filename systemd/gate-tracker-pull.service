@@ -1,0 +1,12 @@
+[Unit]
+Description=Pull Gate-Tracker-Kinrise Repository Update
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# Change to the appropriate user if you do not want to run this as root
+User=root
+# Ensure this matches the absolute path to where install.sh places or links the script.
+# If you are keeping it within the repo folder itself, put the absolute repo path.
+ExecStart=/opt/Gate-Tracker-Kinrise/systemd/pull-repo.sh

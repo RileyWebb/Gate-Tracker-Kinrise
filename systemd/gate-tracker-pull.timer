@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Gate-Tracker-Kinrise Repository Pull every 24 hours
+
+[Timer]
+# Runs daily at midnight. You can change this to specific intervals like `*-*-* *:00:00` for hourly.
+OnCalendar=daily
+# Persistent=true ensures that if the machine is off during the scheduled time, it will run as soon as it boots up.
+Persistent=true
+
+[Install]
+WantedBy=timers.target
