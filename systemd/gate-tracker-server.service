@@ -1,0 +1,15 @@
+[Unit]
+Description=Gate Tracker API Server and Web Dashboard
+After=network-online.target
+
+[Service]
+Type=simple
+User=root
+# We run from the src directory so the sqlite db and config.json are found correctly
+WorkingDirectory=/opt/Gate-Tracker-Kinrise/src
+ExecStart=/usr/bin/python3 /opt/Gate-Tracker-Kinrise/src/server.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
