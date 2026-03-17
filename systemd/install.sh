@@ -36,6 +36,17 @@ sed -i "s|ExecStart=.*|ExecStart=$SCRIPT_DIR/pull-repo.sh|g" /etc/systemd/system
 echo "Reloading systemd daemon..."
 systemctl daemon-reload
 
+echo "Setting up external configuration directory..."
+mkdir -p /etc/gate-tracker
+if [ ! -f "/etc/gate-tracker/config.json" ]; then
+    echo "Copying default config.json to /etc/gate-tracker/..."
+    cp "$REPO_DIR/src/config.json" /etc/gate-tracker/config.json
+    # Restrict permissions since it contains passwords and tokens
+    chmod 600 /etc/gate-tracker/config.json
+else
+    echo "Configuration file already exists in /etc/gate-tracker. Skipping default copy."
+fi
+
 echo "Configuring and enabling the Flask API Server..."
 cp "$SCRIPT_DIR/gate-tracker-server.service" /etc/systemd/system/
 sed -i "s|WorkingDirectory=.*|WorkingDirectory=$REPO_DIR/src|g" /etc/systemd/system/gate-tracker-server.service

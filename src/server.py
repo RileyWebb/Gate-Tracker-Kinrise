@@ -8,7 +8,10 @@ import requests
 
 app = Flask(__name__)
 DB_FILE = 'tracker.db'
-CONFIG_FILE = 'config.json'
+# Try to look for config in etc first, fallback to current directory
+CONFIG_FILE = '/etc/gate-tracker/config.json'
+if not os.path.exists(CONFIG_FILE):
+    CONFIG_FILE = 'config.json'
 SECRET_TOKEN = 'your_api_secret_here'
 
 def init_db():

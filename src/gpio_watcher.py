@@ -9,7 +9,11 @@ from functools import partial
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-CONFIG_PATH = "config.json"  # Update this to absolute path in production like /etc/gate-tracker/config.json
+# Try to look for config in etc first, fallback to current directory
+CONFIG_PATH = '/etc/gate-tracker/config.json'
+import os
+if not os.path.exists(CONFIG_PATH):
+    CONFIG_PATH = 'config.json'
 
 def load_config():
     try:
