@@ -190,12 +190,31 @@ def admin():
     if 'forwarding' not in config:
         config['forwarding'] = {"enabled": False, "url": "", "token": ""}
 
+    with sqlite3.connect(DB_FILE) as conn:
+        conn.row_factory = sqlite3.Row
+        c = conn.cursor()
+        c.execute('SELECT company, count FROM counts')
+        counts = {row['company']: row['count'] for row in c.fetchall()}
+
     if request.method == 'POST':
         # Update GPIO pins
         for key in config['buttons']:
             new_pin = request.form.get(f'pin_{key}')
             if new_pin and new_pin.isdigit():
                 config['buttons'][key]['gpio_pin'] = int(new_pin)
+
+        # Manual count updates from admin page
+        with sqlite3.connect(DB_FILE) as conn:
+            c = conn.cursor()
+            for company in counts.keys():
+                new_count = request.form.get(f'count_{company}')
+                if new_count is not None and new_count.strip() != '':
+                    try:
+                        parsed_count = max(0, int(new_count))
+                        c.execute('UPDATE counts SET count = ? WHERE company = ?', (parsed_count, company))
+                    except ValueError:
+                        pass
+            conn.commit()
         
         # Update credentials
         new_user = request.form.get('admin_username')
@@ -216,10 +235,16 @@ def admin():
             message = "Settings updated and GPIO watcher restarted successfully."
         except Exception as e:
             message = f"Settings updated, but failed to restart watcher service: {str(e)}"
+
+        with sqlite3.connect(DB_FILE) as conn:
+            conn.row_factory = sqlite3.Row
+            c = conn.cursor()
+            c.execute('SELECT company, count FROM counts')
+            counts = {row['company']: row['count'] for row in c.fetchall()}
             
-        return render_template('admin.html', config=config, message=message)
+        return render_template('admin.html', config=config, counts=counts, message=message)
         
-    return render_template('admin.html', config=config)
+    return render_template('admin.html', config=config, counts=counts)
 
 if __name__ == '__main__':
     # Run the server on port 80 (requires root)

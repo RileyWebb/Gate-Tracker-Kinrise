@@ -34,6 +34,16 @@
 
             <hr>
 
+            <h2>Manual Company Counts</h2>
+            {% for company, value in counts.items() %}
+            <div class="form-group">
+                <label for="count_{{ company }}">{{ company }} trucks currently on site</label>
+                <input type="number" min="0" id="count_{{ company }}" name="count_{{ company }}" value="{{ value }}" required>
+            </div>
+            {% endfor %}
+
+            <hr>
+
             <h2>Admin Login Settings</h2>
             <div class="form-group">
                 <label for="admin_username">Admin Username</label>
