@@ -81,6 +81,11 @@
                 <label for="secret_token">Shared Secret Token</label>
                 <input type="text" id="secret_token" name="secret_token" value="{{ config.get('secret_token', '') }}" required>
             </div>
+            <div class="form-group">
+                <label for="dashboard_server_url">Dashboard Mirror URL (optional)</label>
+                <input type="url" id="dashboard_server_url" name="dashboard_server_url" value="{{ config.get('dashboard_server_url', '') }}" placeholder="http://192.168.1.50">
+                <small style="color:#666; display:block; margin-top:.35rem;">Leave blank on the primary server. Set this on a secondary Pi to mirror the primary dashboard.</small>
+            </div>
 
             <h2>Expected Device IDs</h2>
             <div class="form-group">

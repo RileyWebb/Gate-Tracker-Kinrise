@@ -1,5 +1,6 @@
 import sqlite3
 import os
+import logging
 from flask import Flask, request, jsonify, render_template, Response, redirect, url_for
 from functools import wraps
 import subprocess
@@ -16,9 +17,80 @@ if not os.path.exists(CONFIG_FILE):
 SECRET_TOKEN = 'your_api_secret_here'
 
 
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+
 def get_secret_token():
     config = get_config()
     return config.get('secret_token', SECRET_TOKEN)
+
+
+def get_dashboard_source_url():
+    config = get_config()
+    return config.get('dashboard_server_url', '').strip()
+
+
+def fetch_dashboard_snapshot():
+    config = get_config()
+    expected_devices = config.get('expected_devices', ['pi-entrance', 'pi-exit'])
+    source_url = get_dashboard_source_url()
+
+    if source_url:
+        try:
+            response = requests.get(source_url.rstrip('/') + '/api/status', timeout=5)
+            response.raise_for_status()
+            snapshot = response.json()
+            snapshot.setdefault('devices', [])
+            snapshot.setdefault('counts', {})
+            snapshot.setdefault('events', [])
+            snapshot['source_mode'] = 'remote'
+            snapshot['source_url'] = source_url
+            snapshot['source_online'] = True
+            snapshot['source_error'] = ''
+            return snapshot, expected_devices, True
+        except Exception as e:
+            logging.warning(f"Failed to fetch dashboard snapshot from {source_url}: {e}")
+
+    with sqlite3.connect(DB_FILE) as conn:
+        conn.row_factory = sqlite3.Row
+        c = conn.cursor()
+
+        c.execute('SELECT company, count FROM counts')
+        counts = {row['company']: row['count'] for row in c.fetchall()}
+
+        c.execute('SELECT timestamp, gate, company, action FROM events ORDER BY timestamp DESC LIMIT 20')
+        events = [dict(row) for row in c.fetchall()]
+
+        c.execute('SELECT device, last_seen, status FROM devices')
+        seen_devices = {row['device']: dict(row) for row in c.fetchall()}
+
+    devices = []
+    for device_name in expected_devices:
+        device_data = seen_devices.get(device_name)
+        if device_data:
+            devices.append({
+                "device": device_name,
+                "last_seen": device_data.get("last_seen"),
+                "status": device_data.get("status", "unknown"),
+                "online": is_device_online(device_data.get("last_seen"))
+            })
+        else:
+            devices.append({
+                "device": device_name,
+                "last_seen": None,
+                "status": "missing",
+                "online": False
+            })
+
+    return {
+        "counts": counts,
+        "events": events,
+        "devices": devices,
+        "source_mode": 'local-fallback' if source_url else 'local',
+        "source_url": source_url,
+        "source_online": False if source_url else True,
+        "source_error": f"Unable to reach {source_url}" if source_url else ''
+    }, expected_devices, False
 
 
 def is_device_online(last_seen, timeout_seconds=30):
@@ -88,58 +160,18 @@ def requires_auth(f):
 
 @app.route('/')
 def index():
-    config = get_config()
-    expected_devices = config.get('expected_devices', ['pi-entrance', 'pi-exit'])
-
-    with sqlite3.connect(DB_FILE) as conn:
-        conn.row_factory = sqlite3.Row
-        c = conn.cursor()
-        
-        c.execute('SELECT company, count FROM counts')
-        counts = {row['company']: row['count'] for row in c.fetchall()}
-        
-        c.execute('SELECT timestamp, gate, company, action FROM events ORDER BY timestamp DESC LIMIT 20')
-        events = c.fetchall()
-        
-    return render_template('index.html', counts=counts, events=events, expected_devices=expected_devices)
+    snapshot, expected_devices, _ = fetch_dashboard_snapshot()
+    return render_template(
+        'index.html',
+        counts=snapshot['counts'],
+        events=snapshot['events'],
+        expected_devices=expected_devices,
+    )
 
 @app.route('/api/status', methods=['GET'])
 def get_status():
-    config = get_config()
-    expected_devices = config.get('expected_devices', ['pi-entrance', 'pi-exit'])
-
-    with sqlite3.connect(DB_FILE) as conn:
-        conn.row_factory = sqlite3.Row
-        c = conn.cursor()
-        
-        c.execute('SELECT company, count FROM counts')
-        counts = {row['company']: row['count'] for row in c.fetchall()}
-        
-        c.execute('SELECT timestamp, gate, company, action FROM events ORDER BY timestamp DESC LIMIT 20')
-        events = [dict(row) for row in c.fetchall()]
-        # Get devices and last seen
-        c.execute('SELECT device, last_seen, status FROM devices')
-        seen_devices = {row['device']: dict(row) for row in c.fetchall()}
-
-    devices = []
-    for device_name in expected_devices:
-        device_data = seen_devices.get(device_name)
-        if device_data:
-            devices.append({
-                "device": device_name,
-                "last_seen": device_data.get("last_seen"),
-                "status": device_data.get("status", "unknown"),
-                "online": is_device_online(device_data.get("last_seen"))
-            })
-        else:
-            devices.append({
-                "device": device_name,
-                "last_seen": None,
-                "status": "missing",
-                "online": False
-            })
-
-    return jsonify({"counts": counts, "events": events, "devices": devices})
+    snapshot, _, _ = fetch_dashboard_snapshot()
+    return jsonify(snapshot)
 
 @app.route('/api/event', methods=['POST'])
 def handle_event():
@@ -272,10 +304,12 @@ def admin():
         # Update local watcher/server auth settings
         new_server_url = request.form.get('server_url', '').strip()
         new_secret_token = request.form.get('secret_token', '').strip()
+        dashboard_server_url = request.form.get('dashboard_server_url', '').strip()
         if new_server_url:
             config['server_url'] = new_server_url
         if new_secret_token:
             config['secret_token'] = new_secret_token
+        config['dashboard_server_url'] = dashboard_server_url
 
         # Update expected device IDs for status lights
         expected_device_1 = request.form.get('expected_device_1', '').strip()

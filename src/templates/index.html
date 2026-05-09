@@ -20,6 +20,11 @@
         .light { width: 12px; height: 12px; border-radius: 50%; display: inline-block; margin-right: .5rem; vertical-align: middle; background: #d64545; box-shadow: 0 0 0 0 rgba(214,69,69,.55); }
         .light.online { background: #23b35d; animation: pulse 1.8s infinite; }
         .last-seen { margin-top: .6rem; color: #556; font-size: .95rem; }
+        .source-banner { background: #0f172a; color: #e2e8f0; border-radius: 12px; padding: .9rem 1.1rem; margin: 1rem 0 1.25rem 0; display: flex; justify-content: space-between; gap: 1rem; align-items: center; flex-wrap: wrap; }
+        .source-banner strong { color: white; }
+        .source-pill { font-size: .8rem; font-weight: 700; border-radius: 999px; padding: .3rem .65rem; }
+        .source-pill.remote { background: #dff7e9; color: #0f7a3c; }
+        .source-pill.fallback { background: #fbe3e3; color: #8a1f1f; }
         @keyframes pulse {
             0% { box-shadow: 0 0 0 0 rgba(35,179,93,.45); }
             70% { box-shadow: 0 0 0 12px rgba(35,179,93,0); }
@@ -34,6 +39,14 @@
 </head>
 <body>
     <h1>On-Site Truck Tracker</h1>
+
+    <div class="source-banner">
+        <div>
+            <strong>Dashboard source</strong>
+            <div id="source-status-text" style="margin-top:.25rem; color:#cbd5e1;">Loading dashboard status...</div>
+        </div>
+        <div class="source-pill remote" id="source-status-pill">Checking</div>
+    </div>
     
     <div class="dashboard">
         <div class="card">
@@ -107,6 +120,25 @@
                 const response = await fetch('/api/status');
                 if (!response.ok) return;
                 const data = await response.json();
+
+                const sourceText = document.getElementById('source-status-text');
+                const sourcePill = document.getElementById('source-status-pill');
+                const sourceOnline = !!data.source_online;
+                const sourceMode = data.source_mode || 'local';
+                if (sourceText) {
+                    if (sourceOnline && sourceMode === 'remote') {
+                        sourceText.innerText = `Live data mirrored from ${data.source_url || 'primary server'}`;
+                    } else if (sourceMode === 'local-fallback') {
+                        sourceText.innerText = data.source_error || 'Primary server unreachable. Showing cached local data.';
+                    } else {
+                        sourceText.innerText = 'Running on the local dashboard source.';
+                    }
+                }
+                if (sourcePill) {
+                    sourcePill.innerText = sourceOnline && sourceMode === 'remote' ? 'Remote Live' : (sourceMode === 'local-fallback' ? 'Fallback' : 'Local');
+                    sourcePill.classList.toggle('remote', sourceOnline && sourceMode === 'remote');
+                    sourcePill.classList.toggle('fallback', sourceMode === 'local-fallback');
+                }
                 
                 // Update company counts
                 document.getElementById('count-Kinrise').innerText = data.counts['Kinrise'] !== undefined ? data.counts['Kinrise'] : 0;

@@ -1,6 +1,7 @@
 {
     "server_url": "http://localhost/api/event",
     "secret_token": "your_api_secret_here",
+    "dashboard_server_url": "",
     "admin_username": "admin",
     "admin_password": "password123",
     "forwarding": {
