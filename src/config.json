@@ -14,6 +14,7 @@
             "action": "enter",
             "gate": "entrance",
             "company": "Kinrise",
+            "device": "pi-entrance",
             "bounce_time": 0.2
         },
         "entrance_company_b": {
@@ -21,6 +22,7 @@
             "action": "enter",
             "gate": "entrance",
             "company": "Muve",
+            "device": "pi-entrance",
             "bounce_time": 0.2
         },
         "exit_company_a": {
@@ -28,6 +30,7 @@
             "action": "exit",
             "gate": "exit",
             "company": "Kinrise",
+            "device": "pi-exit",
             "bounce_time": 0.2
         },
         "exit_company_b": {
@@ -35,6 +38,7 @@
             "action": "exit",
             "gate": "exit",
             "company": "Muve",
+            "device": "pi-exit",
             "bounce_time": 0.2
         }
     }

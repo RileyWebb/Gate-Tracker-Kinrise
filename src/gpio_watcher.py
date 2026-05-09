@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
+import argparse
 import json
 import time
 import logging
 import requests
 from gpiozero import Button
 from functools import partial
+import threading
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -46,7 +48,33 @@ def send_update(url, token, gate, company, action, name):
     except requests.exceptions.RequestException as e:
         logging.error(f"HTTP Request failed: {e}")
 
+def send_heartbeat(server_url, token, device_id, interval=10):
+    if not device_id:
+        logging.info("No device id provided; skipping heartbeat thread.")
+        return
+
+    url = server_url.rstrip('/') + '/heartbeat'
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json"
+    }
+
+    while True:
+        try:
+            payload = {"device": device_id, "status": "ok"}
+            requests.post(url, json=payload, headers=headers, timeout=5)
+            logging.debug(f"Sent heartbeat for device {device_id}")
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Heartbeat failed for {device_id}: {e}")
+        time.sleep(interval)
+
 def main():
+    parser = argparse.ArgumentParser(description='GPIO watcher for Gate Tracker')
+    parser.add_argument('--device', '-d', help='Device id for this Pi (e.g. "pi-entrance" or "pi-exit")')
+    args = parser.parse_args()
+
+    device_id = args.device
+
     config = load_config()
     if not config:
         return
@@ -58,12 +86,30 @@ def main():
     # Keep references to prevent garbage collection
     active_buttons = []
 
+    # Start heartbeat thread if device_id provided
+    if device_id:
+        heartbeat_thread = threading.Thread(target=send_heartbeat, args=(server_url, secret_token, device_id, 10), daemon=True)
+        heartbeat_thread.start()
+
     for name, b_config in buttons_config.items():
         pin = b_config.get("gpio_pin")
         action = b_config.get("action")
         gate = b_config.get("gate")
         company = b_config.get("company")
         bounce_time = b_config.get("bounce_time", 0.2)
+        button_device = b_config.get("device")
+
+        # Device filtering logic:
+        # - If a button has a `device` field, only register it when `--device` matches.
+        # - If a button has no `device` field, register it only when --device is not provided (backwards compatibility).
+        if button_device is not None:
+            if device_id is None or button_device != device_id:
+                logging.info(f"Skipping '{name}' assigned to device '{button_device}' (this device: '{device_id}')")
+                continue
+        else:
+            if device_id is not None:
+                logging.info(f"Skipping '{name}' because no device assignment present and --device was provided ({device_id})")
+                continue
 
         if pin is None:
             logging.warning(f"Skipping '{name}' due to missing GPIO pin.")

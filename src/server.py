@@ -33,6 +33,13 @@ def init_db():
                 action TEXT
             )
         ''')
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS devices (
+                device TEXT PRIMARY KEY,
+                last_seen DATETIME,
+                status TEXT
+            )
+        ''')
         # Initialize companies if not exist
         c.execute('INSERT OR IGNORE INTO counts (company, count) VALUES ("Kinrise", 0)')
         c.execute('INSERT OR IGNORE INTO counts (company, count) VALUES ("Muve", 0)')
@@ -89,8 +96,10 @@ def get_status():
         
         c.execute('SELECT timestamp, gate, company, action FROM events ORDER BY timestamp DESC LIMIT 20')
         events = [dict(row) for row in c.fetchall()]
-        
-    return jsonify({"counts": counts, "events": events})
+        # Get devices and last seen
+        c.execute('SELECT device, last_seen, status FROM devices')
+        devices = [dict(row) for row in c.fetchall()]
+    return jsonify({"counts": counts, "events": events, "devices": devices})
 
 @app.route('/api/event', methods=['POST'])
 def handle_event():
@@ -150,6 +159,29 @@ def handle_event():
             print(f"Failed to forward event: {e}")
 
     return jsonify({"success": True, "company": company, "new_count": new_count})
+
+
+@app.route('/api/heartbeat', methods=['POST'])
+def handle_heartbeat():
+    auth_header = request.headers.get('Authorization')
+    if auth_header != f"Bearer {SECRET_TOKEN}":
+        return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.json or {}
+    device = data.get('device')
+    status = data.get('status', 'ok')
+
+    if not device:
+        return jsonify({"error": "Missing device"}), 400
+
+    # Record last seen as local time
+    local_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with sqlite3.connect(DB_FILE) as conn:
+        c = conn.cursor()
+        c.execute('INSERT OR REPLACE INTO devices (device, last_seen, status) VALUES (?, ?, ?)', (device, local_now, status))
+        conn.commit()
+
+    return jsonify({"success": True, "device": device, "last_seen": local_now})
 
 @app.route('/admin', methods=['GET', 'POST'])
 @requires_auth

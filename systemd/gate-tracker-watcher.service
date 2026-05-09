@@ -6,7 +6,8 @@ After=network-online.target gate-tracker-server.service
 Type=simple
 User=root
 WorkingDirectory=/opt/Gate-Tracker-Kinrise/src
-ExecStart=/usr/bin/python3 /opt/Gate-Tracker-Kinrise/src/gpio_watcher.py
+Environment=DEVICE=pi-entrance
+ExecStart=/usr/bin/python3 /opt/Gate-Tracker-Kinrise/src/gpio_watcher.py --device ${DEVICE}
 Restart=always
 RestartSec=5
 

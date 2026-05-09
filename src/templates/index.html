@@ -33,6 +33,20 @@
         </div>
     </div>
 
+    <h2>Device Status</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Device</th>
+                <th>Last Seen</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody id="devices-body">
+            <tr><td colspan="3" style="text-align:center;">No devices reporting yet.</td></tr>
+        </tbody>
+    </table>
+
     <h2>Recent Events</h2>
     <table>
         <thead>
@@ -100,6 +114,40 @@
                         tr.appendChild(tdAction);
                         
                         tbody.appendChild(tr);
+                    });
+                }
+
+                // Update devices table
+                const devicesBody = document.getElementById('devices-body');
+                devicesBody.innerHTML = '';
+                if (!data.devices || data.devices.length === 0) {
+                    devicesBody.innerHTML = '<tr><td colspan="3" style="text-align:center;">No devices reporting yet.</td></tr>';
+                } else {
+                    const now = new Date();
+                    data.devices.forEach(dev => {
+                        const tr = document.createElement('tr');
+
+                        const tdName = document.createElement('td');
+                        tdName.innerText = dev.device;
+                        tr.appendChild(tdName);
+
+                        const tdLast = document.createElement('td');
+                        tdLast.innerText = dev.last_seen || '-';
+                        tr.appendChild(tdLast);
+
+                        const tdStatus = document.createElement('td');
+                        // Determine online status: consider online if last_seen within 30 seconds
+                        let online = false;
+                        if (dev.last_seen) {
+                            const ls = new Date(dev.last_seen.replace(' ', 'T'));
+                            const diff = (now - ls) / 1000;
+                            online = diff <= 30;
+                        }
+                        tdStatus.innerText = online ? 'Online' : 'Offline';
+                        tdStatus.style.color = online ? 'green' : 'red';
+                        tr.appendChild(tdStatus);
+
+                        devicesBody.appendChild(tr);
                     });
                 }
             } catch (error) {
