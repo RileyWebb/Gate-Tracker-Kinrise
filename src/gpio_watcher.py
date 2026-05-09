@@ -73,11 +73,17 @@ def main():
     parser.add_argument('--device', '-d', help='Device id for this Pi (e.g. "pi-entrance" or "pi-exit")')
     args = parser.parse_args()
 
-    device_id = args.device
-
     config = load_config()
     if not config:
         return
+
+    # Resolve device id from CLI first, then environment, then config file.
+    device_id = args.device or os.environ.get("DEVICE") or config.get("device_id")
+
+    if device_id:
+        logging.info(f"Using device id: {device_id}")
+    else:
+        logging.warning("No device id set. Use --device, DEVICE env var, or config.json device_id.")
 
     server_url = config.get("server_url")
     secret_token = config.get("secret_token")
