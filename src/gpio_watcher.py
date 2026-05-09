@@ -7,6 +7,7 @@ import requests
 from gpiozero import Button
 from functools import partial
 import threading
+from urllib.parse import urlparse
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -53,20 +54,41 @@ def send_heartbeat(server_url, token, device_id, interval=10):
         logging.info("No device id provided; skipping heartbeat thread.")
         return
 
-    url = server_url.rstrip('/') + '/heartbeat'
+    url = build_heartbeat_url(server_url)
     headers = {
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json"
     }
 
+    logging.info(f"Heartbeat endpoint for {device_id}: {url}")
+
     while True:
         try:
             payload = {"device": device_id, "status": "ok"}
-            requests.post(url, json=payload, headers=headers, timeout=5)
-            logging.debug(f"Sent heartbeat for device {device_id}")
+            response = requests.post(url, json=payload, headers=headers, timeout=5)
+            if response.status_code != 200:
+                logging.error(
+                    f"Heartbeat rejected for {device_id}. "
+                    f"Status: {response.status_code}, Response: {response.text}"
+                )
         except requests.exceptions.RequestException as e:
             logging.error(f"Heartbeat failed for {device_id}: {e}")
         time.sleep(interval)
+
+
+def build_heartbeat_url(event_url):
+    # `server_url` is expected to be /api/event; heartbeat must target /api/heartbeat.
+    parsed = urlparse(event_url)
+    path = parsed.path.rstrip('/')
+
+    if path.endswith('/event'):
+        heartbeat_path = path[:-len('/event')] + '/heartbeat'
+    elif path.endswith('/api'):
+        heartbeat_path = path + '/heartbeat'
+    else:
+        heartbeat_path = path + '/heartbeat'
+
+    return parsed._replace(path=heartbeat_path).geturl()
 
 def main():
     parser = argparse.ArgumentParser(description='GPIO watcher for Gate Tracker')
