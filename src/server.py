@@ -15,6 +15,21 @@ if not os.path.exists(CONFIG_FILE):
     CONFIG_FILE = 'config.json'
 SECRET_TOKEN = 'your_api_secret_here'
 
+
+def get_secret_token():
+    config = get_config()
+    return config.get('secret_token', SECRET_TOKEN)
+
+
+def is_device_online(last_seen, timeout_seconds=30):
+    if not last_seen:
+        return False
+    try:
+        seen = datetime.strptime(last_seen, "%Y-%m-%d %H:%M:%S")
+        return (datetime.now() - seen).total_seconds() <= timeout_seconds
+    except ValueError:
+        return False
+
 def init_db():
     with sqlite3.connect(DB_FILE) as conn:
         c = conn.cursor()
@@ -73,6 +88,9 @@ def requires_auth(f):
 
 @app.route('/')
 def index():
+    config = get_config()
+    expected_devices = config.get('expected_devices', ['pi-entrance', 'pi-exit'])
+
     with sqlite3.connect(DB_FILE) as conn:
         conn.row_factory = sqlite3.Row
         c = conn.cursor()
@@ -83,10 +101,13 @@ def index():
         c.execute('SELECT timestamp, gate, company, action FROM events ORDER BY timestamp DESC LIMIT 20')
         events = c.fetchall()
         
-    return render_template('index.html', counts=counts, events=events)
+    return render_template('index.html', counts=counts, events=events, expected_devices=expected_devices)
 
 @app.route('/api/status', methods=['GET'])
 def get_status():
+    config = get_config()
+    expected_devices = config.get('expected_devices', ['pi-entrance', 'pi-exit'])
+
     with sqlite3.connect(DB_FILE) as conn:
         conn.row_factory = sqlite3.Row
         c = conn.cursor()
@@ -98,13 +119,32 @@ def get_status():
         events = [dict(row) for row in c.fetchall()]
         # Get devices and last seen
         c.execute('SELECT device, last_seen, status FROM devices')
-        devices = [dict(row) for row in c.fetchall()]
+        seen_devices = {row['device']: dict(row) for row in c.fetchall()}
+
+    devices = []
+    for device_name in expected_devices:
+        device_data = seen_devices.get(device_name)
+        if device_data:
+            devices.append({
+                "device": device_name,
+                "last_seen": device_data.get("last_seen"),
+                "status": device_data.get("status", "unknown"),
+                "online": is_device_online(device_data.get("last_seen"))
+            })
+        else:
+            devices.append({
+                "device": device_name,
+                "last_seen": None,
+                "status": "missing",
+                "online": False
+            })
+
     return jsonify({"counts": counts, "events": events, "devices": devices})
 
 @app.route('/api/event', methods=['POST'])
 def handle_event():
     auth_header = request.headers.get('Authorization')
-    if auth_header != f"Bearer {SECRET_TOKEN}":
+    if auth_header != f"Bearer {get_secret_token()}":
         return jsonify({"error": "Unauthorized"}), 401
 
     data = request.json
@@ -164,7 +204,7 @@ def handle_event():
 @app.route('/api/heartbeat', methods=['POST'])
 def handle_heartbeat():
     auth_header = request.headers.get('Authorization')
-    if auth_header != f"Bearer {SECRET_TOKEN}":
+    if auth_header != f"Bearer {get_secret_token()}":
         return jsonify({"error": "Unauthorized"}), 401
 
     data = request.json or {}
@@ -189,6 +229,8 @@ def admin():
     config = get_config()
     if 'forwarding' not in config:
         config['forwarding'] = {"enabled": False, "url": "", "token": ""}
+    if 'expected_devices' not in config:
+        config['expected_devices'] = ['pi-entrance', 'pi-exit']
 
     with sqlite3.connect(DB_FILE) as conn:
         conn.row_factory = sqlite3.Row
@@ -227,6 +269,25 @@ def admin():
         config['forwarding']['url'] = request.form.get('forwarding_url', '').strip()
         config['forwarding']['token'] = request.form.get('forwarding_token', '').strip()
 
+        # Update local watcher/server auth settings
+        new_server_url = request.form.get('server_url', '').strip()
+        new_secret_token = request.form.get('secret_token', '').strip()
+        if new_server_url:
+            config['server_url'] = new_server_url
+        if new_secret_token:
+            config['secret_token'] = new_secret_token
+
+        # Update expected device IDs for status lights
+        expected_device_1 = request.form.get('expected_device_1', '').strip()
+        expected_device_2 = request.form.get('expected_device_2', '').strip()
+        expected_devices = []
+        if expected_device_1:
+            expected_devices.append(expected_device_1)
+        if expected_device_2:
+            expected_devices.append(expected_device_2)
+        if expected_devices:
+            config['expected_devices'] = expected_devices
+
         save_config(config)
         
         # Restart the watcher service to apply new GPIO settings
@@ -245,6 +306,28 @@ def admin():
         return render_template('admin.html', config=config, counts=counts, message=message)
         
     return render_template('admin.html', config=config, counts=counts)
+
+
+@app.route('/manual-count', methods=['POST'])
+@requires_auth
+def manual_count_update():
+    company = request.form.get('company')
+    value = request.form.get('value', '').strip()
+
+    if not company or value == '':
+        return redirect(url_for('index'))
+
+    try:
+        count_value = max(0, int(value))
+    except ValueError:
+        return redirect(url_for('index'))
+
+    with sqlite3.connect(DB_FILE) as conn:
+        c = conn.cursor()
+        c.execute('UPDATE counts SET count = ? WHERE company = ?', (count_value, company))
+        conn.commit()
+
+    return redirect(url_for('index'))
 
 if __name__ == '__main__':
     # Run the server on port 80 (requires root)

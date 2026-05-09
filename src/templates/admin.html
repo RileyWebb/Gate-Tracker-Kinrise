@@ -70,6 +70,28 @@
                 <input type="text" id="forwarding_token" name="forwarding_token" value="{{ config.get('forwarding', {}).get('token', '') }}" placeholder="Bearer token or secret string">
             </div>
 
+            <hr>
+
+            <h2>Watcher Server Settings</h2>
+            <div class="form-group">
+                <label for="server_url">Watcher API URL</label>
+                <input type="url" id="server_url" name="server_url" value="{{ config.get('server_url', '') }}" placeholder="http://192.168.1.50/api/event" required>
+            </div>
+            <div class="form-group">
+                <label for="secret_token">Shared Secret Token</label>
+                <input type="text" id="secret_token" name="secret_token" value="{{ config.get('secret_token', '') }}" required>
+            </div>
+
+            <h2>Expected Device IDs</h2>
+            <div class="form-group">
+                <label for="expected_device_1">Device 1 ID</label>
+                <input type="text" id="expected_device_1" name="expected_device_1" value="{{ config.get('expected_devices', ['pi-entrance', 'pi-exit'])[0] }}" required>
+            </div>
+            <div class="form-group">
+                <label for="expected_device_2">Device 2 ID</label>
+                <input type="text" id="expected_device_2" name="expected_device_2" value="{{ config.get('expected_devices', ['pi-entrance', 'pi-exit'])[-1] }}" required>
+            </div>
+
             <button type="submit" class="btn">Update & Restart Watcher</button>
             <p style="margin-top: 1rem;"><a href="/">← Back to Dashboard</a></p>
         </form>

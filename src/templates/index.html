@@ -10,6 +10,13 @@
         .card { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); flex: 1; text-align: center; }
         h1 { color: #2c3e50; }
         .count { font-size: 4rem; font-weight: bold; color: #3498db; }
+        .count-controls { margin-top: 1rem; display: flex; gap: .5rem; justify-content: center; align-items: center; }
+        .count-controls input { width: 110px; padding: .4rem; }
+        .count-controls button { padding: .45rem .7rem; border: none; background: #2c3e50; color: white; border-radius: 4px; cursor: pointer; }
+        .status-wrap { display: flex; gap: 1rem; margin: 1.2rem 0 2rem 0; flex-wrap: wrap; }
+        .status-card { background: white; border-radius: 8px; padding: 1rem 1.2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); min-width: 220px; }
+        .light { width: 14px; height: 14px; border-radius: 50%; display: inline-block; margin-right: .5rem; vertical-align: middle; background: #c0392b; box-shadow: 0 0 8px rgba(192,57,43,.6); }
+        .light.online { background: #27ae60; box-shadow: 0 0 8px rgba(39,174,96,.7); }
         table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         th, td { padding: 1rem; border-bottom: 1px solid #ddd; text-align: left; }
         th { background-color: #2c3e50; color: white; }
@@ -25,12 +32,32 @@
             <h2><img src="/static/img/kinrise_logo.png" alt="Kinrise Logo" style="height: 40px; vertical-align: middle;"></h2>
             <div class="count" id="count-Kinrise">{{ counts.get('Kinrise', 0) }}</div>
             <p>Trucks Currently On Site</p>
+            <form class="count-controls" method="POST" action="/manual-count">
+                <input type="hidden" name="company" value="Kinrise">
+                <input type="number" min="0" name="value" value="{{ counts.get('Kinrise', 0) }}" aria-label="Set Kinrise truck count">
+                <button type="submit">Set</button>
+            </form>
         </div>
         <div class="card">
             <h2><img src="/static/img/muve_logo.png" alt="Muve Logo" style="height: 40px; vertical-align: middle;"></h2>
             <div class="count" id="count-Muve">{{ counts.get('Muve', 0) }}</div>
             <p>Trucks Currently On Site</p>
+            <form class="count-controls" method="POST" action="/manual-count">
+                <input type="hidden" name="company" value="Muve">
+                <input type="number" min="0" name="value" value="{{ counts.get('Muve', 0) }}" aria-label="Set Muve truck count">
+                <button type="submit">Set</button>
+            </form>
         </div>
+    </div>
+
+    <h2>Server Status Lights</h2>
+    <div class="status-wrap" id="status-lights">
+        {% for device in expected_devices %}
+        <div class="status-card">
+            <div><span class="light" id="light-{{ device }}"></span><strong>{{ device }}</strong></div>
+            <div id="seen-{{ device }}" style="margin-top:.4rem; color:#555;">Last seen: -</div>
+        </div>
+        {% endfor %}
     </div>
 
     <h2>Device Status</h2>
@@ -123,7 +150,6 @@
                 if (!data.devices || data.devices.length === 0) {
                     devicesBody.innerHTML = '<tr><td colspan="3" style="text-align:center;">No devices reporting yet.</td></tr>';
                 } else {
-                    const now = new Date();
                     data.devices.forEach(dev => {
                         const tr = document.createElement('tr');
 
@@ -136,18 +162,22 @@
                         tr.appendChild(tdLast);
 
                         const tdStatus = document.createElement('td');
-                        // Determine online status: consider online if last_seen within 30 seconds
-                        let online = false;
-                        if (dev.last_seen) {
-                            const ls = new Date(dev.last_seen.replace(' ', 'T'));
-                            const diff = (now - ls) / 1000;
-                            online = diff <= 30;
-                        }
+                        const online = !!dev.online;
                         tdStatus.innerText = online ? 'Online' : 'Offline';
                         tdStatus.style.color = online ? 'green' : 'red';
                         tr.appendChild(tdStatus);
 
                         devicesBody.appendChild(tr);
+
+                        // Update status lights for expected device cards.
+                        const light = document.getElementById(`light-${dev.device}`);
+                        const seen = document.getElementById(`seen-${dev.device}`);
+                        if (light) {
+                            light.classList.toggle('online', online);
+                        }
+                        if (seen) {
+                            seen.innerText = `Last seen: ${dev.last_seen || '-'}`;
+                        }
                     });
                 }
             } catch (error) {
