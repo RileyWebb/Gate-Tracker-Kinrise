@@ -4,37 +4,107 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gate Tracker</title>
+    <!-- Google Fonts for a prettier look -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: Arial, sans-serif; margin: 2rem; background-color: #f4f4f9; color: #333; }
-        .dashboard { display: flex; gap: 2rem; margin-bottom: 2rem; }
-        .card { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); flex: 1; text-align: center; }
-        h1 { color: #2c3e50; }
-        .count { font-size: 4rem; font-weight: bold; color: #3498db; }
-        .status-wrap { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin: 1.2rem 0 2rem 0; }
-        .status-card { background: linear-gradient(180deg, #ffffff, #f7f9fc); border-radius: 12px; padding: 1rem 1.2rem; box-shadow: 0 8px 18px rgba(0,0,0,0.08); border: 1px solid #e6ebf2; }
-        .status-top { display: flex; align-items: center; justify-content: space-between; }
-        .device-name { font-weight: 700; color: #1f2d3d; letter-spacing: .2px; }
-        .badge { font-size: .8rem; font-weight: 700; border-radius: 999px; padding: .25rem .6rem; }
-        .badge.online { color: #0f7a3c; background: #dff7e9; }
-        .badge.offline { color: #8a1f1f; background: #fbe3e3; }
-        .light { width: 12px; height: 12px; border-radius: 50%; display: inline-block; margin-right: .5rem; vertical-align: middle; background: #d64545; box-shadow: 0 0 0 0 rgba(214,69,69,.55); }
-        .light.online { background: #23b35d; animation: pulse 1.8s infinite; }
-        .last-seen { margin-top: .6rem; color: #556; font-size: .95rem; }
-        .source-banner { background: #0f172a; color: #e2e8f0; border-radius: 12px; padding: .9rem 1.1rem; margin: 1rem 0 1.25rem 0; display: flex; justify-content: space-between; gap: 1rem; align-items: center; flex-wrap: wrap; }
-        .source-banner strong { color: white; }
-        .source-pill { font-size: .8rem; font-weight: 700; border-radius: 999px; padding: .3rem .65rem; }
-        .source-pill.remote { background: #dff7e9; color: #0f7a3c; }
-        .source-pill.fallback { background: #fbe3e3; color: #8a1f1f; }
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(35,179,93,.45); }
-            70% { box-shadow: 0 0 0 12px rgba(35,179,93,0); }
-            100% { box-shadow: 0 0 0 0 rgba(35,179,93,0); }
+        :root {
+            --bg-color: #f8fafc;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --card-bg: #ffffff;
+            --primary: #3b82f6;
+            --success-bg: #dcfce7;
+            --success-text: #166534;
+            --danger-bg: #fee2e2;
+            --danger-text: #991b1b;
+            --border: #e2e8f0;
         }
-        table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        th, td { padding: 1rem; border-bottom: 1px solid #ddd; text-align: left; }
-        th { background-color: #2c3e50; color: white; }
-        .enter { color: green; font-weight: bold; }
-        .exit { color: red; font-weight: bold; }
+        body { 
+            font-family: 'Inter', system-ui, -apple-system, sans-serif; 
+            margin: 0; 
+            padding: 2rem; 
+            background-color: var(--bg-color); 
+            color: var(--text-main); 
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        h1, h2 { color: var(--text-main); margin-bottom: 1rem; }
+        h1 { text-align: center; font-weight: 700; font-size: 2.2rem; margin-bottom: 2rem; color: #0f172a; }
+        h2 { font-size: 1.4rem; border-bottom: 2px solid var(--border); padding-bottom: 0.5rem; margin-top: 2rem; }
+        
+        .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2.5rem; }
+        .card { 
+            background: var(--card-bg); 
+            padding: 2.5rem 2rem; 
+            border-radius: 16px; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05); 
+            text-align: center; 
+            border: 1px solid var(--border);
+            transition: transform 0.2s ease;
+        }
+        .card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+        .count { font-size: 4.5rem; font-weight: 700; color: var(--primary); line-height: 1.1; margin: 1rem 0; }
+        .card p { color: var(--text-muted); font-size: 1.1rem; margin: 0; font-weight: 600; }
+        
+        .status-wrap { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin: 1.5rem 0 2rem; }
+        .status-card { 
+            background: var(--card-bg); 
+            border-radius: 12px; 
+            padding: 1.25rem 1.5rem; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03); 
+            border: 1px solid var(--border); 
+        }
+        .status-top { display: flex; align-items: center; justify-content: space-between; }
+        .device-name { font-weight: 600; color: var(--text-main); font-size: 1.1rem; }
+        .badge { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; border-radius: 999px; padding: 0.35rem 0.75rem; letter-spacing: 0.5px; }
+        .badge.online { color: var(--success-text); background: var(--success-bg); }
+        .badge.offline { color: var(--danger-text); background: var(--danger-bg); }
+        .light { 
+            width: 10px; height: 10px; border-radius: 50%; display: inline-block; 
+            margin-right: 0.6rem; background: #ef4444; box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2); 
+        }
+        .light.online { background: #22c55e; animation: pulse 2s infinite; }
+        .last-seen { margin-top: 0.75rem; color: var(--text-muted); font-size: 0.9rem; }
+        
+        .source-banner { 
+            background: #1e293b; color: #f8fafc; border-radius: 12px; padding: 1rem 1.5rem; 
+            margin: 1rem 0 2rem 0; display: flex; justify-content: space-between; gap: 1rem; align-items: center; flex-wrap: wrap; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .source-banner strong { color: white; display: block; font-size: 1.05rem; margin-bottom: 0.25rem; }
+        .source-pill { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; border-radius: 999px; padding: 0.35rem 0.75rem; letter-spacing: 0.5px; }
+        .source-pill.remote { background: var(--success-bg); color: var(--success-text); }
+        .source-pill.fallback { background: var(--danger-bg); color: var(--danger-text); }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+        }
+        
+        .table-container {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+            border: 1px solid var(--border);
+            overflow: hidden;
+            margin-top: 1rem;
+        }
+        .table-container h2 {
+            margin: 0;
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            background: #fdfdfd;
+        }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th, td { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); }
+        th { background-color: #f8fafc; color: var(--text-muted); font-weight: 600; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background-color: #f1f5f9; }
+        
+        td.enter { color: var(--success-text); font-weight: 600; background-color: rgba(22, 101, 52, 0.05); }
+        td.exit { color: var(--danger-text); font-weight: 600; background-color: rgba(153, 27, 27, 0.05); }
     </style>
 </head>
 <body>
@@ -61,7 +131,7 @@
         </div>
     </div>
 
-    <h2>Server Status Lights</h2>
+    <h2>Device Status</h2>
     <div class="status-wrap" id="status-lights">
         {% for device in expected_devices %}
         <div class="status-card">
@@ -74,45 +144,33 @@
         {% endfor %}
     </div>
 
-    <h2>Device Status</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Device</th>
-                <th>Last Seen</th>
-                <th>Status</th>
-            </tr>
-        </thead>
-        <tbody id="devices-body">
-            <tr><td colspan="3" style="text-align:center;">No devices reporting yet.</td></tr>
-        </tbody>
-    </table>
-
-    <h2>Recent Events</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Time</th>
-                <th>Gate</th>
-                <th>Company</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody id="events-body">
-            {% for event in events %}
-            <tr>
-                <td>{{ event.timestamp }}</td>
-                <td style="text-transform: capitalize;">{{ event.gate }}</td>
-                <td>{{ event.company }}</td>
-                <td class="{{ event.action }}" style="text-transform: capitalize;">{{ event.action }}</td>
-            </tr>
-            {% else %}
-            <tr id="no-events">
-                <td colspan="4" style="text-align: center;">No events recorded yet.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-container">
+        <h2>Recent Events</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Gate</th>
+                    <th>Company</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="events-body">
+                {% for event in events %}
+                <tr>
+                    <td>{{ event.timestamp }}</td>
+                    <td style="text-transform: capitalize;">{{ event.gate }}</td>
+                    <td>{{ event.company }}</td>
+                    <td class="{{ event.action }}" style="text-transform: capitalize;">{{ event.action }}</td>
+                </tr>
+                {% else %}
+                <tr id="no-events">
+                    <td colspan="4" style="text-align: center;">No events recorded yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 
     <script>
         async function fetchStatus() {
@@ -177,31 +235,12 @@
                     });
                 }
 
-                // Update devices table
-                const devicesBody = document.getElementById('devices-body');
-                devicesBody.innerHTML = '';
+                // Update status lights
                 if (!data.devices || data.devices.length === 0) {
-                    devicesBody.innerHTML = '<tr><td colspan="3" style="text-align:center;">No devices reporting yet.</td></tr>';
+                    // No devices processing needed if empty
                 } else {
                     data.devices.forEach(dev => {
-                        const tr = document.createElement('tr');
-
-                        const tdName = document.createElement('td');
-                        tdName.innerText = dev.device;
-                        tr.appendChild(tdName);
-
-                        const tdLast = document.createElement('td');
-                        tdLast.innerText = dev.last_seen || '-';
-                        tr.appendChild(tdLast);
-
-                        const tdStatus = document.createElement('td');
                         const online = !!dev.online;
-                        tdStatus.innerText = online ? 'Online' : 'Offline';
-                        tdStatus.style.color = online ? 'green' : 'red';
-                        tr.appendChild(tdStatus);
-
-                        devicesBody.appendChild(tr);
-
                         // Update status lights for expected device cards.
                         const light = document.getElementById(`light-${dev.device}`);
                         const badge = document.getElementById(`badge-${dev.device}`);
