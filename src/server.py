@@ -175,6 +175,27 @@ def get_status():
     snapshot, _, _ = fetch_dashboard_snapshot()
     return jsonify(snapshot)
 
+@app.route('/api/all_data', methods=['GET'])
+def get_all_data():
+    with sqlite3.connect(DB_FILE) as conn:
+        conn.row_factory = sqlite3.Row
+        c = conn.cursor()
+        
+        c.execute('SELECT company, count FROM counts')
+        counts = {row['company']: row['count'] for row in c.fetchall()}
+
+        c.execute('SELECT id, timestamp, gate, company, action FROM events ORDER BY timestamp DESC')
+        events = [dict(row) for row in c.fetchall()]
+
+        c.execute('SELECT device, last_seen, status FROM devices')
+        devices = [dict(row) for row in c.fetchall()]
+
+    return jsonify({
+        "counts": counts,
+        "events": events,
+        "devices": devices
+    })
+
 @app.route('/api/event', methods=['POST'])
 def handle_event():
     auth_header = request.headers.get('Authorization')
