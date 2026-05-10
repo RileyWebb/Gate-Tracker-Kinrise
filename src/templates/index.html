@@ -8,103 +8,108 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #f8fafc;
-            --text-main: #1e293b;
-            --text-muted: #64748b;
-            --card-bg: #ffffff;
-            --primary: #3b82f6;
-            --success-bg: #dcfce7;
-            --success-text: #166534;
-            --danger-bg: #fee2e2;
-            --danger-text: #991b1b;
-            --border: #e2e8f0;
+            --bg-color: #0f172a;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --card-bg: #1e293b;
+            --primary: #38bdf8;
+            --success-bg: rgba(34, 197, 94, 0.2);
+            --success-text: #4ade80;
+            --danger-bg: rgba(239, 68, 68, 0.2);
+            --danger-text: #f87171;
+            --border: #334155;
         }
         body { 
             font-family: 'Inter', system-ui, -apple-system, sans-serif; 
             margin: 0; 
-            padding: 2rem; 
+            padding: 2vh 2vw; 
             background-color: var(--bg-color); 
             color: var(--text-main); 
-            max-width: 1200px;
-            margin-left: auto;
-            margin-right: auto;
+            height: 100vh;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
         h1, h2 { color: var(--text-main); margin-bottom: 1rem; }
-        h1 { text-align: center; font-weight: 700; font-size: 2.2rem; margin-bottom: 2rem; color: #0f172a; }
-        h2 { font-size: 1.4rem; border-bottom: 2px solid var(--border); padding-bottom: 0.5rem; margin-top: 2rem; }
+        h1 { text-align: center; font-weight: 800; font-size: 3.5vh; margin-bottom: 2vh; color: #e2e8f0; text-transform: uppercase; letter-spacing: 2px;}
+        h2 { font-size: 2.2vh; border-bottom: 2px solid var(--border); padding-bottom: 0.5rem; margin-top: 1vh; color: var(--text-muted); }
         
-        .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2.5rem; }
+        .dashboard { display: grid; grid-template-columns: repeat(2, 1fr); gap: 2vw; margin-bottom: 2vh; flex-shrink: 0; }
         .card { 
             background: var(--card-bg); 
-            padding: 2.5rem 2rem; 
-            border-radius: 16px; 
-            box-shadow: 0 4px 20px rgba(0,0,0,0.05); 
+            padding: 4vh 2vw; 
+            border-radius: 20px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3); 
             text-align: center; 
             border: 1px solid var(--border);
-            transition: transform 0.2s ease;
         }
-        .card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
-        .count { font-size: 4.5rem; font-weight: 700; color: var(--primary); line-height: 1.1; margin: 1rem 0; }
-        .card p { color: var(--text-muted); font-size: 1.1rem; margin: 0; font-weight: 600; }
+        .card .logo { height: 8vh; width: 200px; object-fit: contain; vertical-align: middle; filter: brightness(0) invert(1); }
+        .count { font-size: 14vh; font-weight: 800; color: var(--primary); line-height: 1; margin: 2vh 0; text-shadow: 0 0 20px rgba(56, 189, 248, 0.3); }
+        .card p { color: var(--text-muted); font-size: 2.5vh; margin: 0; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
         
-        .status-wrap { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin: 1.5rem 0 2rem; }
+        .status-wrap { display: flex; justify-content: center; flex-wrap: wrap; gap: 1vw; margin: 1vh 0; }
         .status-card { 
             background: var(--card-bg); 
             border-radius: 12px; 
-            padding: 1.25rem 1.5rem; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.03); 
+            padding: 1.5vh 1.5vw; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2); 
             border: 1px solid var(--border); 
+            min-width: 250px;
         }
         .status-top { display: flex; align-items: center; justify-content: space-between; }
-        .device-name { font-weight: 600; color: var(--text-main); font-size: 1.1rem; }
-        .badge { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; border-radius: 999px; padding: 0.35rem 0.75rem; letter-spacing: 0.5px; }
+        .device-name { font-weight: 700; color: var(--text-main); font-size: 2vh; }
+        .badge { font-size: 1.5vh; font-weight: 800; text-transform: uppercase; border-radius: 999px; padding: 0.5vh 1vw; letter-spacing: 0.5px; }
         .badge.online { color: var(--success-text); background: var(--success-bg); }
         .badge.offline { color: var(--danger-text); background: var(--danger-bg); }
         .light { 
-            width: 10px; height: 10px; border-radius: 50%; display: inline-block; 
-            margin-right: 0.6rem; background: #ef4444; box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2); 
+            width: 1.5vh; height: 1.5vh; border-radius: 50%; display: inline-block; 
+            margin-right: 0.8vw; background: #ef4444; box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.2); 
         }
-        .light.online { background: #22c55e; animation: pulse 2s infinite; }
-        .last-seen { margin-top: 0.75rem; color: var(--text-muted); font-size: 0.9rem; }
+        .light.online { background: #4ade80; animation: pulse 2s infinite; }
+        .last-seen { margin-top: 1vh; color: var(--text-muted); font-size: 1.6vh; }
         
         .source-banner { 
-            background: #1e293b; color: #f8fafc; border-radius: 12px; padding: 1rem 1.5rem; 
-            margin: 1rem 0 2rem 0; display: flex; justify-content: space-between; gap: 1rem; align-items: center; flex-wrap: wrap; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            display: none; /* Hide source banner on TV */
         }
-        .source-banner strong { color: white; display: block; font-size: 1.05rem; margin-bottom: 0.25rem; }
-        .source-pill { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; border-radius: 999px; padding: 0.35rem 0.75rem; letter-spacing: 0.5px; }
-        .source-pill.remote { background: var(--success-bg); color: var(--success-text); }
-        .source-pill.fallback { background: var(--danger-bg); color: var(--danger-text); }
         
         @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
-            70% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+            0% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.4); }
+            70% { box-shadow: 0 0 0 1.5vh rgba(74, 222, 128, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
         }
         
         .table-container {
             background: var(--card-bg);
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
             border: 1px solid var(--border);
             overflow: hidden;
-            margin-top: 1rem;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
         }
         .table-container h2 {
             margin: 0;
-            padding: 1.5rem;
+            padding: 2vh 2vw;
             border-bottom: 1px solid var(--border);
-            background: #fdfdfd;
+            background: #151e2e;
+            font-size: 2.2vh;
+        }
+        .table-wrapper {
+            overflow-y: auto;
+            flex-grow: 1;
         }
         table { width: 100%; border-collapse: collapse; text-align: left; }
-        th, td { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); }
-        th { background-color: #f8fafc; color: var(--text-muted); font-weight: 600; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        th, td { padding: 2vh 2vw; border-bottom: 1px solid var(--border); font-size: 2vh; }
+        th { background-color: #151e2e; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; position: sticky; top: 0; }
         tr:last-child td { border-bottom: none; }
-        tr:hover td { background-color: #f1f5f9; }
         
-        td.enter { color: var(--success-text); font-weight: 600; background-color: rgba(22, 101, 52, 0.05); }
-        td.exit { color: var(--danger-text); font-weight: 600; background-color: rgba(153, 27, 27, 0.05); }
+        td.enter { color: var(--success-text); font-weight: 700; background-color: rgba(74, 222, 128, 0.05); }
+        td.exit { color: var(--danger-text); font-weight: 700; background-color: rgba(248, 113, 113, 0.05); }
+        
+        /* Hide scrollbar for TV */
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
     </style>
 </head>
 <body>
@@ -120,12 +125,12 @@
     
     <div class="dashboard">
         <div class="card">
-            <h2><img src="/static/img/kinrise_logo.png" alt="Kinrise Logo" style="height: 40px; vertical-align: middle;"></h2>
+            <h2><img src="/static/img/kinrise_logo.png" alt="Kinrise Logo" class="logo"></h2>
             <div class="count" id="count-Kinrise">{{ counts.get('Kinrise', 0) }}</div>
             <p>Trucks Currently On Site</p>
         </div>
         <div class="card">
-            <h2><img src="/static/img/muve_logo.png" alt="Muve Logo" style="height: 40px; vertical-align: middle;"></h2>
+            <h2><img src="/static/img/muve_logo.png" alt="Muve Logo" class="logo"></h2>
             <div class="count" id="count-Muve">{{ counts.get('Muve', 0) }}</div>
             <p>Trucks Currently On Site</p>
         </div>
@@ -146,30 +151,32 @@
 
     <div class="table-container">
         <h2>Recent Events</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Time</th>
-                    <th>Gate</th>
-                    <th>Company</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody id="events-body">
-                {% for event in events %}
-                <tr>
-                    <td>{{ event.timestamp }}</td>
-                    <td style="text-transform: capitalize;">{{ event.gate }}</td>
-                    <td>{{ event.company }}</td>
-                    <td class="{{ event.action }}" style="text-transform: capitalize;">{{ event.action }}</td>
-                </tr>
-                {% else %}
-                <tr id="no-events">
-                    <td colspan="4" style="text-align: center;">No events recorded yet.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Gate</th>
+                        <th>Company</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="events-body">
+                    {% for event in events %}
+                    <tr>
+                        <td>{{ event.timestamp }}</td>
+                        <td style="text-transform: capitalize;">{{ event.gate }}</td>
+                        <td>{{ event.company }}</td>
+                        <td class="{{ event.action }}" style="text-transform: capitalize;">{{ event.action }}</td>
+                    </tr>
+                    {% else %}
+                    <tr id="no-events">
+                        <td colspan="4" style="text-align: center;">No events recorded yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <script>
