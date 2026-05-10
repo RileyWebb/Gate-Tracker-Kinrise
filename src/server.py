@@ -58,7 +58,7 @@ def fetch_dashboard_snapshot():
         c.execute('SELECT company, count FROM counts')
         counts = {row['company']: row['count'] for row in c.fetchall()}
 
-        c.execute('SELECT timestamp, gate, company, action FROM events ORDER BY timestamp DESC LIMIT 20')
+        c.execute('SELECT timestamp, gate, company, action FROM events ORDER BY timestamp DESC LIMIT 100')
         events = [dict(row) for row in c.fetchall()]
 
         c.execute('SELECT device, last_seen, status FROM devices')
@@ -197,8 +197,8 @@ def handle_event():
         c.execute('INSERT INTO events (timestamp, gate, company, action) VALUES (?, ?, ?, ?)', (local_now, gate, company, action))
         
         # Delete entries older than 30 days
-        thirty_days_ago = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
-        c.execute('DELETE FROM events WHERE timestamp < ?', (thirty_days_ago,))
+        # thirty_days_ago = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
+        # c.execute('DELETE FROM events WHERE timestamp < ?', (thirty_days_ago,))
         
         # Update count
         delta = 1 if action == "enter" else -1

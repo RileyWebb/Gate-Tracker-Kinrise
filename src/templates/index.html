@@ -107,8 +107,10 @@
             font-size: 2.2vh;
         }
         .table-wrapper {
-            overflow-y: auto;
             flex-grow: 1;
+            overflow: hidden; /* Hide scrollbars completely for pagination */
+            display: flex;
+            flex-direction: column;
         }
         table { width: 100%; border-collapse: collapse; text-align: left; }
         th, td { padding: 2vh 2vw; border-bottom: 1px solid var(--border); font-size: 2vh; }
@@ -118,8 +120,38 @@
         td.enter { color: var(--success-text); font-weight: 700; background-color: rgba(74, 222, 128, 0.05); }
         td.exit { color: var(--danger-text); font-weight: 700; background-color: rgba(248, 113, 113, 0.05); }
         
-        /* Hide scrollbar for TV */
-        ::-webkit-scrollbar { width: 0px; background: transparent; }
+        /* Pagination Styles */
+        .pagination-container {
+            background: #151e2e;
+            padding: 1.5vh 2vw;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .page-indicator {
+            color: var(--text-muted);
+            font-size: 1.8vh;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .page-dots {
+            display: flex;
+            gap: 0.5vw;
+        }
+        .page-dot {
+            width: 1vh;
+            height: 1vh;
+            border-radius: 50%;
+            background: var(--border);
+            transition: all 0.3s ease;
+        }
+        .page-dot.active {
+            background: var(--primary);
+            transform: scale(1.3);
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+        }
     </style>
 </head>
 <body>
@@ -191,11 +223,94 @@
                         </tbody>
                     </table>
                 </div>
+                <div class="pagination-container" id="pagination-container" style="display: none;">
+                    <div class="page-indicator" id="page-indicator">Page 1 / 1</div>
+                    <div class="page-dots" id="page-dots"></div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
+        const PAGE_SIZE = 12; // Adjusted page size for TV screen vertically
+        const PAGE_ROTATION_INTERVAL = 10000; // Rotate pages every 10 seconds
+        
+        let allEvents = [];
+        let currentPage = 0;
+        let pageInterval = null;
+
+        function renderEventsPage(pageIndex) {
+            const tbody = document.getElementById('events-body');
+            tbody.innerHTML = '';
+            
+            if (allEvents.length === 0) {
+                tbody.innerHTML = '<tr id="no-events"><td colspan="4" style="text-align: center;">No events recorded yet.</td></tr>';
+                document.getElementById('pagination-container').style.display = 'none';
+                return;
+            }
+            
+            const totalPages = Math.ceil(allEvents.length / PAGE_SIZE);
+            if (pageIndex >= totalPages) {
+                currentPage = 0; // Wrap around
+            }
+            
+            const start = currentPage * PAGE_SIZE;
+            const end = Math.min(start + PAGE_SIZE, allEvents.length);
+            const pageEvents = allEvents.slice(start, end);
+            
+            pageEvents.forEach(event => {
+                const tr = document.createElement('tr');
+                
+                const tdTime = document.createElement('td');
+                tdTime.innerText = event.timestamp;
+                tr.appendChild(tdTime);
+                
+                const tdGate = document.createElement('td');
+                tdGate.style.textTransform = 'capitalize';
+                tdGate.innerText = event.gate;
+                tr.appendChild(tdGate);
+                
+                const tdCompany = document.createElement('td');
+                tdCompany.innerText = event.company;
+                tr.appendChild(tdCompany);
+                
+                const tdAction = document.createElement('td');
+                tdAction.className = event.action;
+                tdAction.style.textTransform = 'capitalize';
+                tdAction.innerText = event.action;
+                tr.appendChild(tdAction);
+                
+                tbody.appendChild(tr);
+            });
+
+            // Update Pagination UI
+            if (totalPages > 1) {
+                document.getElementById('pagination-container').style.display = 'flex';
+                document.getElementById('page-indicator').innerText = `Page ${currentPage + 1} / ${totalPages}`;
+                
+                const dotsContainer = document.getElementById('page-dots');
+                dotsContainer.innerHTML = '';
+                for (let i = 0; i < totalPages; i++) {
+                    const dot = document.createElement('div');
+                    dot.className = `page-dot ${i === currentPage ? 'active' : ''}`;
+                    dotsContainer.appendChild(dot);
+                }
+            } else {
+                document.getElementById('pagination-container').style.display = 'none';
+            }
+        }
+
+        function startEventPagination() {
+            if (pageInterval) clearInterval(pageInterval);
+            pageInterval = setInterval(() => {
+                const totalPages = Math.ceil(allEvents.length / PAGE_SIZE);
+                if (totalPages > 1) {
+                    currentPage = (currentPage + 1) % totalPages;
+                    renderEventsPage(currentPage);
+                }
+            }, PAGE_ROTATION_INTERVAL);
+        }
+
         async function fetchStatus() {
             try {
                 const response = await fetch('/api/status');
@@ -225,38 +340,16 @@
                 document.getElementById('count-Kinrise').innerText = data.counts['Kinrise'] !== undefined ? data.counts['Kinrise'] : 0;
                 document.getElementById('count-Muve').innerText = data.counts['Muve'] !== undefined ? data.counts['Muve'] : 0;
                 
-                // Update events table
-                const tbody = document.getElementById('events-body');
-                tbody.innerHTML = ''; // Clear current rows
+                // Track all events for pagination
+                // If events array length has changed significantly, we reset to page 0
+                const eventCountChanged = allEvents.length !== data.events.length;
+                allEvents = data.events;
                 
-                if (data.events.length === 0) {
-                    tbody.innerHTML = '<tr id="no-events"><td colspan="4" style="text-align: center;">No events recorded yet.</td></tr>';
-                } else {
-                    data.events.forEach(event => {
-                        const tr = document.createElement('tr');
-                        
-                        const tdTime = document.createElement('td');
-                        tdTime.innerText = event.timestamp;
-                        tr.appendChild(tdTime);
-                        
-                        const tdGate = document.createElement('td');
-                        tdGate.style.textTransform = 'capitalize';
-                        tdGate.innerText = event.gate;
-                        tr.appendChild(tdGate);
-                        
-                        const tdCompany = document.createElement('td');
-                        tdCompany.innerText = event.company;
-                        tr.appendChild(tdCompany);
-                        
-                        const tdAction = document.createElement('td');
-                        tdAction.className = event.action;
-                        tdAction.style.textTransform = 'capitalize';
-                        tdAction.innerText = event.action;
-                        tr.appendChild(tdAction);
-                        
-                        tbody.appendChild(tr);
-                    });
+                if (eventCountChanged && currentPage >= Math.ceil(allEvents.length / PAGE_SIZE)) {
+                    currentPage = 0;
                 }
+                
+                renderEventsPage(currentPage);
 
                 // Update status lights
                 if (!data.devices || data.devices.length === 0) {
@@ -288,6 +381,7 @@
 
         // Poll the server for updates every 2 seconds
         fetchStatus();
+        startEventPagination();
         setInterval(fetchStatus, 2000);
     </script>
 </body>
