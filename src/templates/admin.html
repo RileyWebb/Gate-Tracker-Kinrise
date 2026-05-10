@@ -90,11 +90,11 @@
             <h2>Expected Device IDs</h2>
             <div class="form-group">
                 <label for="expected_device_1">Device 1 ID</label>
-                <input type="text" id="expected_device_1" name="expected_device_1" value="{{ config.get('expected_devices', ['pi-entrance', 'pi-exit'])[0] }}" required>
+                <input type="text" id="expected_device_1" name="expected_device_1" value="{{ config.get('expected_devices', ['entrance', 'exit'])[0] }}" required>
             </div>
             <div class="form-group">
                 <label for="expected_device_2">Device 2 ID</label>
-                <input type="text" id="expected_device_2" name="expected_device_2" value="{{ config.get('expected_devices', ['pi-entrance', 'pi-exit'])[-1] }}" required>
+                <input type="text" id="expected_device_2" name="expected_device_2" value="{{ config.get('expected_devices', ['entrance', 'exit'])[-1] }}" required>
             </div>
 
             <button type="submit" class="btn">Update & Restart Watcher</button>

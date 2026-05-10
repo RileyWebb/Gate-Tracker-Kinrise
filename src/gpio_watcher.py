@@ -92,7 +92,7 @@ def build_heartbeat_url(event_url):
 
 def main():
     parser = argparse.ArgumentParser(description='GPIO watcher for Gate Tracker')
-    parser.add_argument('--device', '-d', help='Device id for this Pi (e.g. "pi-entrance" or "pi-exit")')
+    parser.add_argument('--device', '-d', help='Device id for this Pi (e.g. "entrance" or "exit")')
     args = parser.parse_args()
 
     config = load_config()
