@@ -2,6 +2,8 @@ import sqlite3
 import os
 import logging
 from flask import Flask, request, jsonify, render_template, Response, redirect, url_for
+import csv
+from io import StringIO
 from functools import wraps
 import subprocess
 import json
@@ -340,6 +342,36 @@ def admin():
         
     return render_template('admin.html', config=config, counts=counts)
 
+
+@app.route('/admin/download_csv')
+@requires_auth
+def admin_download_csv():
+    with sqlite3.connect(DB_FILE) as conn:
+        conn.row_factory = sqlite3.Row
+        c = conn.cursor()
+        c.execute('SELECT id, timestamp, gate, company, action FROM events ORDER BY timestamp DESC')
+        events = c.fetchall()
+
+    def generate():
+        data = StringIO()
+        writer = csv.writer(data)
+        
+        # Write header
+        writer.writerow(('ID', 'Timestamp', 'Gate', 'Company', 'Action'))
+        yield data.getvalue()
+        data.seek(0)
+        data.truncate(0)
+
+        # Write data rows
+        for event in events:
+            writer.writerow((event['id'], event['timestamp'], event['gate'], event['company'], event['action']))
+            yield data.getvalue()
+            data.seek(0)
+            data.truncate(0)
+
+    response = Response(generate(), mimetype='text/csv')
+    response.headers.set("Content-Disposition", "attachment", filename="gate_tracker_records.csv")
+    return response
 
 @app.route('/manual-count', methods=['POST'])
 @requires_auth
