@@ -129,6 +129,28 @@
             justify-content: space-between;
             align-items: center;
         }
+        .page-controls {
+            display: flex;
+            align-items: center;
+            gap: 1vw;
+        }
+        .page-btn {
+            background: transparent;
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.5vh 1vw;
+            cursor: pointer;
+            font-size: 1.6vh;
+            transition: all 0.2s;
+        }
+        .page-btn:hover:not(:disabled) {
+            background: var(--border);
+        }
+        .page-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
         .page-indicator {
             color: var(--text-muted);
             font-size: 1.8vh;
@@ -225,7 +247,11 @@
                 </div>
                 <div class="pagination-container" id="pagination-container" style="display: none;">
                     <div class="page-indicator" id="page-indicator">Page 1 / 1</div>
-                    <div class="page-dots" id="page-dots"></div>
+                    <div class="page-controls">
+                        <button class="page-btn" id="prev-page-btn" onclick="changePage(-1)">&#8592; Prev</button>
+                        <div class="page-dots" id="page-dots"></div>
+                        <button class="page-btn" id="next-page-btn" onclick="changePage(1)">Next &#8594;</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -233,11 +259,26 @@
 
     <script>
         const PAGE_SIZE = 12; // Adjusted page size for TV screen vertically
-        const PAGE_ROTATION_INTERVAL = 10000; // Rotate pages every 10 seconds
         
         let allEvents = [];
         let currentPage = 0;
-        let pageInterval = null;
+
+        function changePage(delta) {
+            const totalPages = Math.ceil(allEvents.length / PAGE_SIZE);
+            if (totalPages === 0) return;
+            currentPage += delta;
+            if (currentPage < 0) currentPage = 0;
+            if (currentPage >= totalPages) currentPage = totalPages - 1;
+            renderEventsPage(currentPage);
+        }
+
+        function goToPage(index) {
+            const totalPages = Math.ceil(allEvents.length / PAGE_SIZE);
+            if (index >= 0 && index < totalPages) {
+                currentPage = index;
+                renderEventsPage(currentPage);
+            }
+        }
 
         function renderEventsPage(pageIndex) {
             const tbody = document.getElementById('events-body');
@@ -288,27 +329,23 @@
                 document.getElementById('pagination-container').style.display = 'flex';
                 document.getElementById('page-indicator').innerText = `Page ${currentPage + 1} / ${totalPages}`;
                 
+                const prevBtn = document.getElementById('prev-page-btn');
+                const nextBtn = document.getElementById('next-page-btn');
+                if(prevBtn) prevBtn.disabled = currentPage === 0;
+                if(nextBtn) nextBtn.disabled = currentPage === totalPages - 1;
+                
                 const dotsContainer = document.getElementById('page-dots');
                 dotsContainer.innerHTML = '';
                 for (let i = 0; i < totalPages; i++) {
                     const dot = document.createElement('div');
                     dot.className = `page-dot ${i === currentPage ? 'active' : ''}`;
+                    dot.style.cursor = 'pointer';
+                    dot.onclick = () => goToPage(i);
                     dotsContainer.appendChild(dot);
                 }
             } else {
                 document.getElementById('pagination-container').style.display = 'none';
             }
-        }
-
-        function startEventPagination() {
-            if (pageInterval) clearInterval(pageInterval);
-            pageInterval = setInterval(() => {
-                const totalPages = Math.ceil(allEvents.length / PAGE_SIZE);
-                if (totalPages > 1) {
-                    currentPage = (currentPage + 1) % totalPages;
-                    renderEventsPage(currentPage);
-                }
-            }, PAGE_ROTATION_INTERVAL);
         }
 
         async function fetchStatus() {
@@ -381,7 +418,6 @@
 
         // Poll the server for updates every 2 seconds
         fetchStatus();
-        startEventPagination();
         setInterval(fetchStatus, 2000);
     </script>
 </body>
