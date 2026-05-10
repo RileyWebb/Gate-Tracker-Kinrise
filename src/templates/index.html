@@ -33,33 +33,43 @@
         }
         h1, h2 { color: var(--text-main); margin-bottom: 1rem; }
         h1 { text-align: center; font-weight: 800; font-size: 3.5vh; margin-bottom: 2vh; color: #e2e8f0; text-transform: uppercase; letter-spacing: 2px;}
-        h2 { font-size: 2.2vh; border-bottom: 2px solid var(--border); padding-bottom: 0.5rem; margin-top: 1vh; color: var(--text-muted); }
+        h2 { font-size: 2.2vh; border-bottom: 2px solid var(--border); padding-bottom: 0.5rem; margin-top: 1vh; color: var(--text-muted); display: none; }
         
-        .dashboard { display: grid; grid-template-columns: repeat(2, 1fr); gap: 2vw; margin-bottom: 2vh; flex-shrink: 0; }
+        .main-layout { display: flex; gap: 2vw; flex-grow: 1; min-height: 0; width: 100%; }
+        .left-column { flex: 1; display: flex; flex-direction: column; gap: 2vh; min-height: 0; }
+        .right-column { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+        
+        .dashboard { display: grid; grid-template-columns: 1fr; gap: 2vh; flex-grow: 1; }
         .card { 
             background: var(--card-bg); 
-            padding: 4vh 2vw; 
+            padding: 3vh 2vw; 
             border-radius: 20px; 
             box-shadow: 0 10px 30px rgba(0,0,0,0.3); 
             text-align: center; 
             border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
-        .card .logo { height: 8vh; width: 200px; object-fit: contain; vertical-align: middle; filter: brightness(0) invert(1); }
-        .count { font-size: 14vh; font-weight: 800; color: var(--primary); line-height: 1; margin: 2vh 0; text-shadow: 0 0 20px rgba(56, 189, 248, 0.3); }
-        .card p { color: var(--text-muted); font-size: 2.5vh; margin: 0; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+        .card .logo { height: 7vh; width: 200px; object-fit: contain; margin: 0 auto; filter: brightness(0) invert(1); }
+        .count { font-size: 16vh; font-weight: 800; color: var(--primary); line-height: 1; margin: 2vh 0; text-shadow: 0 0 20px rgba(56, 189, 248, 0.3); }
+        .card p { color: var(--text-muted); font-size: 2.2vh; margin: 0; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
         
-        .status-wrap { display: flex; justify-content: center; flex-wrap: wrap; gap: 1vw; margin: 1vh 0; }
-        .status-card { 
-            background: var(--card-bg); 
-            border-radius: 12px; 
-            padding: 1.5vh 1.5vw; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2); 
-            border: 1px solid var(--border); 
-            min-width: 250px;
+        .status-container { 
+            background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border); 
+            padding: 1.5vh 2vw; box-shadow: 0 4px 15px rgba(0,0,0,0.2); 
+            display: flex; flex-direction: column; justify-content: center;
         }
-        .status-top { display: flex; align-items: center; justify-content: space-between; }
-        .device-name { font-weight: 700; color: var(--text-main); font-size: 2vh; }
-        .badge { font-size: 1.5vh; font-weight: 800; text-transform: uppercase; border-radius: 999px; padding: 0.5vh 1vw; letter-spacing: 0.5px; }
+        .status-container h3 { margin: 0 0 1vh 0; font-size: 1.6vh; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 1px; }
+        .status-wrap { display: flex; justify-content: space-around; align-items: center; gap: 1vw; margin: 0; }
+        .status-card { 
+            background: transparent; border-radius: 0; padding: 0; 
+            box-shadow: none; border: none; min-width: auto;
+            text-align: center;
+        }
+        .status-top { display: flex; align-items: center; justify-content: center; gap: 1vw; margin-bottom: 0.5vh; }
+        .device-name { font-weight: 600; color: var(--text-main); font-size: 1.8vh; }
+        .badge { font-size: 1.2vh; font-weight: 800; text-transform: uppercase; border-radius: 999px; padding: 0.4vh 0.8vw; letter-spacing: 0.5px; }
         .badge.online { color: var(--success-text); background: var(--success-bg); }
         .badge.offline { color: var(--danger-text); background: var(--danger-bg); }
         .light { 
@@ -81,7 +91,7 @@
         
         .table-container {
             background: var(--card-bg);
-            border-radius: 16px;
+            border-radius: 20px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
             border: 1px solid var(--border);
             overflow: hidden;
@@ -123,59 +133,67 @@
         <div class="source-pill remote" id="source-status-pill">Checking</div>
     </div>
     
-    <div class="dashboard">
-        <div class="card">
-            <h2><img src="/static/img/kinrise_logo.png" alt="Kinrise Logo" class="logo"></h2>
-            <div class="count" id="count-Kinrise">{{ counts.get('Kinrise', 0) }}</div>
-            <p>Trucks Currently On Site</p>
-        </div>
-        <div class="card">
-            <h2><img src="/static/img/muve_logo.png" alt="Muve Logo" class="logo"></h2>
-            <div class="count" id="count-Muve">{{ counts.get('Muve', 0) }}</div>
-            <p>Trucks Currently On Site</p>
-        </div>
-    </div>
-
-    <h2>Device Status</h2>
-    <div class="status-wrap" id="status-lights">
-        {% for device in expected_devices %}
-        <div class="status-card">
-            <div class="status-top">
-                <div class="device-name"><span class="light" id="light-{{ device }}"></span>{{ device }}</div>
-                <div class="badge offline" id="badge-{{ device }}">Offline</div>
+    <div class="main-layout">
+        <div class="left-column">
+            <div class="dashboard">
+                <div class="card">
+                    <img src="/static/img/kinrise_logo.png" alt="Kinrise Logo" class="logo">
+                    <div class="count" id="count-Kinrise">{{ counts.get('Kinrise', 0) }}</div>
+                    <p>Trucks Currently On Site</p>
+                </div>
+                <div class="card">
+                    <img src="/static/img/muve_logo.png" alt="Muve Logo" class="logo">
+                    <div class="count" id="count-Muve">{{ counts.get('Muve', 0) }}</div>
+                    <p>Trucks Currently On Site</p>
+                </div>
             </div>
-            <div class="last-seen" id="seen-{{ device }}">Last seen: -</div>
-        </div>
-        {% endfor %}
-    </div>
 
-    <div class="table-container">
-        <h2>Recent Events</h2>
-        <div class="table-wrapper">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Time</th>
-                        <th>Gate</th>
-                        <th>Company</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody id="events-body">
-                    {% for event in events %}
-                    <tr>
-                        <td>{{ event.timestamp }}</td>
-                        <td style="text-transform: capitalize;">{{ event.gate }}</td>
-                        <td>{{ event.company }}</td>
-                        <td class="{{ event.action }}" style="text-transform: capitalize;">{{ event.action }}</td>
-                    </tr>
-                    {% else %}
-                    <tr id="no-events">
-                        <td colspan="4" style="text-align: center;">No events recorded yet.</td>
-                    </tr>
+            <div class="status-container">
+                <h3>System Status</h3>
+                <div class="status-wrap" id="status-lights">
+                    {% for device in expected_devices %}
+                    <div class="status-card">
+                        <div class="status-top">
+                            <span class="light" id="light-{{ device }}"></span>
+                            <span class="device-name">{{ device }}</span>
+                            <span class="badge offline" id="badge-{{ device }}">Offline</span>
+                        </div>
+                        <div class="last-seen" id="seen-{{ device }}">Last seen: -</div>
+                    </div>
                     {% endfor %}
-                </tbody>
-            </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="right-column">
+            <div class="table-container">
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Gate</th>
+                                <th>Company</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="events-body">
+                            {% for event in events %}
+                            <tr>
+                                <td>{{ event.timestamp }}</td>
+                                <td style="text-transform: capitalize;">{{ event.gate }}</td>
+                                <td>{{ event.company }}</td>
+                                <td class="{{ event.action }}" style="text-transform: capitalize;">{{ event.action }}</td>
+                            </tr>
+                            {% else %}
+                            <tr id="no-events">
+                                <td colspan="4" style="text-align: center;">No events recorded yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 
