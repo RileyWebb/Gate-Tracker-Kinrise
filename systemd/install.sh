@@ -61,6 +61,14 @@ sed -i "s|ExecStart=.*|ExecStart=/usr/bin/python3 $REPO_DIR/src/gpio_watcher.py|
 systemctl enable gate-tracker-watcher.service
 systemctl start gate-tracker-watcher.service
 
+echo "Configuring and enabling the Exit Button Watcher..."
+cp "$SCRIPT_DIR/gate-tracker-exit-watcher.service" /etc/systemd/system/
+sed -i "s|WorkingDirectory=.*|WorkingDirectory=$REPO_DIR/src|g" /etc/systemd/system/gate-tracker-exit-watcher.service
+# Replace ExecStart path to use the repository path
+sed -i "s|ExecStart=.*|ExecStart=/usr/bin/python3 $REPO_DIR/src/exit_button_watcher.py --pin \${EXIT_PIN}|g" /etc/systemd/system/gate-tracker-exit-watcher.service
+systemctl enable gate-tracker-exit-watcher.service
+systemctl start gate-tracker-exit-watcher.service
+
 # Enable and start the timer (not the service directly, the timer triggers the service)
 echo "Enabling and starting the $SERVICE_NAME timer..."
 systemctl enable "$SERVICE_NAME.timer"
