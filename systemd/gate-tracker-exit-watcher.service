@@ -1,0 +1,16 @@
+[Unit]
+Description=Gate Tracker Exit Button Watcher
+After=network-online.target gate-tracker-server.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/Gate-Tracker-Kinrise/src
+# Set the GPIO pin via the EXIT_PIN environment variable or edit this file
+Environment=EXIT_PIN=17
+ExecStart=/usr/bin/python3 /opt/Gate-Tracker-Kinrise/src/exit_button_watcher.py --pin ${EXIT_PIN}
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
