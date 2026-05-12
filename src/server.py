@@ -368,14 +368,31 @@ def admin():
         if expected_devices:
             config['expected_devices'] = expected_devices
 
+        # Save extra pin setting if provided
+        person_pin = request.form.get('person_exit_pin', '').strip()
+        if person_pin != '':
+            try:
+                config['person_exit_pin'] = int(person_pin)
+            except ValueError:
+                pass
+
         save_config(config)
-        
-        # Restart the watcher service to apply new GPIO settings
+
+        # Restart the watcher services to apply new GPIO settings
+        messages = []
         try:
             subprocess.run(['systemctl', 'restart', 'gate-tracker-watcher.service'], check=True)
-            message = "Settings updated and GPIO watcher restarted successfully."
+            messages.append('GPIO watcher restarted')
         except Exception as e:
-            message = f"Settings updated, but failed to restart watcher service: {str(e)}"
+            messages.append(f'failed to restart gate-tracker-watcher: {str(e)}')
+
+        try:
+            subprocess.run(['systemctl', 'restart', 'gate-tracker-exit-watcher.service'], check=True)
+            messages.append('exit watcher restarted')
+        except Exception as e:
+            messages.append(f'failed to restart gate-tracker-exit-watcher: {str(e)}')
+
+        message = 'Settings updated: ' + '; '.join(messages)
 
         with sqlite3.connect(DB_FILE) as conn:
             conn.row_factory = sqlite3.Row

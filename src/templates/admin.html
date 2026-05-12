@@ -32,6 +32,12 @@
             </div>
             {% endfor %}
 
+            <div class="form-group">
+                <label for="person_exit_pin">Person Exit Button GPIO Pin (optional)</label>
+                <input type="number" id="person_exit_pin" name="person_exit_pin" value="{{ config.get('person_exit_pin', '') }}" placeholder="e.g. 17">
+                <small style="color:#666; display:block; margin-top:.35rem;">Set this to let the exit-button watcher use the configured pin. Leave blank to manage via systemd unit or CLI.</small>
+            </div>
+
             <hr>
 
             <h2>Manual Company Counts</h2>
