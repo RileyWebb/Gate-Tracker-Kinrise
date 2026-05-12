@@ -42,6 +42,22 @@ def fetch_dashboard_snapshot():
             response = requests.get(source_url.rstrip('/') + '/api/status', timeout=5)
             response.raise_for_status()
             snapshot = response.json()
+            # Also include any locally-logged 'Other' events so they show on this dashboard
+            try:
+                with sqlite3.connect(DB_FILE) as conn:
+                    conn.row_factory = sqlite3.Row
+                    c = conn.cursor()
+                    c.execute("SELECT timestamp, gate, company, action FROM events WHERE lower(company) = 'other' ORDER BY timestamp DESC LIMIT 100")
+                    local_other = [dict(row) for row in c.fetchall()]
+                    # Merge local 'Other' events into snapshot events, avoiding duplicates
+                    existing = set((e.get('timestamp'), e.get('gate'), e.get('company'), e.get('action')) for e in snapshot.get('events', []))
+                    for ev in local_other:
+                        key = (ev.get('timestamp'), ev.get('gate'), ev.get('company'), ev.get('action'))
+                        if key not in existing:
+                            snapshot.setdefault('events', []).insert(0, ev)
+                            existing.add(key)
+            except Exception:
+                logging.exception('Failed to merge local Other events into remote snapshot')
             snapshot.setdefault('devices', [])
             snapshot.setdefault('counts', {})
             snapshot.setdefault('events', [])
