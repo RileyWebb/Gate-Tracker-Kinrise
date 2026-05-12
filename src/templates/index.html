@@ -215,11 +215,6 @@
                     {% endfor %}
                 </div>
             </div>
-
-            <div class="card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;">
-                <p style="margin-bottom:1vh;color:var(--text-muted);font-weight:700;">Log Person Exit</p>
-                <button id="log-exit-btn" style="background:var(--danger-text);color:#001517;border:none;padding:1vh 2vw;border-radius:10px;font-weight:800;cursor:pointer">Log Exit (No Counter)</button>
-            </div>
         </div>
 
         <div class="right-column">
@@ -424,29 +419,6 @@
         // Poll the server for updates every 2 seconds
         fetchStatus();
         setInterval(fetchStatus, 2000);
-<<<<<<< HEAD
-
-        // Log exit button (logs a person leaving as 'Other' without updating counters)
-        const logExitBtn = document.getElementById('log-exit-btn');
-        if (logExitBtn) {
-            logExitBtn.addEventListener('click', async () => {
-                try {
-                    logExitBtn.disabled = true;
-                    const res = await fetch('/log_exit', { method: 'POST' });
-                    if (!res.ok) throw new Error('Request failed');
-                    const data = await res.json();
-                    alert('Exit logged. Thank you.');
-                } catch (err) {
-                    console.error('Failed to log exit:', err);
-                    alert('Failed to log exit. Try again.');
-                } finally {
-                    logExitBtn.disabled = false;
-                }
-            });
-        }
-=======
-        
->>>>>>> recovery-amend
     </script>
 </body>
 </html>
