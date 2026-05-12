@@ -37,18 +37,43 @@ def load_config():
 
 
 def post_exit(server_url, token, gate='exit'):
-    url = server_url.rstrip('/') + '/api/event'
+    # Build the correct endpoint. `server_url` may already include `/api/event`.
+    if server_url.rstrip('/').endswith('/api/event'):
+        url = server_url.rstrip('/')
+    else:
+        url = server_url.rstrip('/') + '/api/event'
+
     payload = {"gate": gate, "company": "Other", "action": "exit"}
     headers = {"Content-Type": "application/json"}
     if token:
         headers['Authorization'] = f"Bearer {token}"
 
     try:
+        logging.info(f"Posting exit to {url}")
         resp = requests.post(url, json=payload, headers=headers, timeout=5)
         if resp.status_code == 200:
             logging.info(f"Logged exit to {url}")
+            return
         else:
-            logging.error(f"Failed to log exit: {resp.status_code} {resp.text}")
+            logging.error(f"Failed to log exit to {url}: {resp.status_code} {resp.text}")
+
+        # If we got a 404, try the lightweight public /log_exit endpoint (handle cases where server_url included /api/event)
+        if resp.status_code == 404:
+            try:
+                if url.rstrip('/').endswith('/api/event'):
+                    alt_base = url[:-len('/api/event')]
+                else:
+                    alt_base = url
+                alt_url = alt_base.rstrip('/') + '/log_exit'
+                logging.info(f"Attempting fallback POST to {alt_url}")
+                resp2 = requests.post(alt_url, json=payload, headers=headers, timeout=5)
+                if resp2.status_code == 200:
+                    logging.info(f"Logged exit to fallback {alt_url}")
+                    return
+                else:
+                    logging.error(f"Fallback also failed: {resp2.status_code} {resp2.text}")
+            except Exception as e:
+                logging.error(f"Fallback POST failed: {e}")
     except Exception as e:
         logging.error(f"HTTP request failed: {e}")
 
@@ -60,7 +85,7 @@ def main():
     args = parser.parse_args()
 
     cfg = load_config()
-    server_url = cfg.get('server_url') or cfg.get('server') or 'http://localhost:5000'
+    server_url = cfg.get('server_url') or cfg.get('server') or 'http://localhost'
     secret = cfg.get('secret_token') or cfg.get('token') or None
 
     # Determine pin: CLI > config 'person_exit_pin' > config.buttons.person_exit.gpio_pin
