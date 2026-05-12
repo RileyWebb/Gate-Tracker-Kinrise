@@ -214,26 +214,31 @@ def handle_event():
 
     with sqlite3.connect(DB_FILE, timeout=20) as conn:
         c = conn.cursor()
-        
+
         # Log event with local timestamp
         local_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         c.execute('INSERT INTO events (timestamp, gate, company, action) VALUES (?, ?, ?, ?)', (local_now, gate, company, action))
-        
-        # Ensure company exists in counts table before updating
-        c.execute('INSERT OR IGNORE INTO counts (company, count) VALUES (?, 0)', (company,))
-        
-        # Update count
-        delta = 1 if action == "enter" else -1
-        c.execute('UPDATE counts SET count = count + ? WHERE company = ?', (delta, company))
-        
-        # Ensure count doesn't go below 0 (optional but good practice)
-        c.execute('UPDATE counts SET count = 0 WHERE count < 0')
-        
+
+        # If the event is for the special 'Other' category, only log it and do NOT update counters
+        if str(company).strip().lower() != 'other':
+            # Ensure company exists in counts table before updating
+            c.execute('INSERT OR IGNORE INTO counts (company, count) VALUES (?, 0)', (company,))
+
+            # Update count
+            delta = 1 if action == "enter" else -1
+            c.execute('UPDATE counts SET count = count + ? WHERE company = ?', (delta, company))
+
+            # Ensure count doesn't go below 0 (optional but good practice)
+            c.execute('UPDATE counts SET count = 0 WHERE count < 0')
+
+            # Get updated count
+            c.execute('SELECT count FROM counts WHERE company = ?', (company,))
+            new_count = c.fetchone()[0]
+        else:
+            # For 'Other' we don't maintain a counter
+            new_count = None
+
         conn.commit()
-        
-        # Get updated count
-        c.execute('SELECT count FROM counts WHERE company = ?', (company,))
-        new_count = c.fetchone()[0]
 
     # Forward to external API if enabled
     forwarding = config.get('forwarding', {})
@@ -253,6 +258,25 @@ def handle_event():
             print(f"Failed to forward event: {e}")
 
     return jsonify({"success": True, "company": company, "new_count": new_count})
+
+
+@app.route('/log_exit', methods=['POST'])
+def log_exit():
+    """Public endpoint for logging a person leaving without adjusting company counters.
+    Logs an event with gate='exit', company='Other', action='exit'.
+    """
+    # Create a lightweight log entry in the events table
+    gate = 'exit'
+    company = 'Other'
+    action = 'exit'
+
+    with sqlite3.connect(DB_FILE, timeout=20) as conn:
+        c = conn.cursor()
+        local_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        c.execute('INSERT INTO events (timestamp, gate, company, action) VALUES (?, ?, ?, ?)', (local_now, gate, company, action))
+        conn.commit()
+
+    return jsonify({"success": True, "company": company, "logged_at": local_now})
 
 
 @app.route('/api/heartbeat', methods=['POST'])
